@@ -220,3 +220,5 @@ docs/graph_api_examples/
 .cursor/
 docs/DEVELOPMENT.md
 .gitignore
+docs/AUTHENTICATION.md
+/docs
