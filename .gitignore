@@ -218,3 +218,5 @@ auth_record.json
 auth_records/auth_record.json
 docs/graph_api_examples/
 .cursor/
+docs/DEVELOPMENT.md
+.gitignore
