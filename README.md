@@ -71,6 +71,37 @@ The server will start at `http://localhost:8000`
 - `GET /` - Root endpoint
 - `GET /health` - Health check
 
+### Events (EventLink Compatible)
+
+- `GET /events.json` - Get calendar events in JSON format
+- `GET /events.tana` - Get calendar events in Tana Paste format
+
+**Examples:**
+
+```bash
+# Get today's events in Tana format
+curl "http://localhost:8000/events.tana"
+
+# Get next 7 days, exclude Status and Availability fields
+curl "http://localhost:8000/events.tana?offset=7&filterField=Status,Availability"
+
+# Get confirmed meetings only with custom tag
+curl "http://localhost:8000/events.tana?filterStatus=Confirmed&tag=work"
+```
+
+**Query Parameters:**
+- `date` - Specific date (YYYY-MM-DD, default: today)
+- `offset` - Number of days to fetch (default: 1)
+- `tag` - Custom tag for Tana output (default: meeting)
+- `timingField` - Custom timing field name (default: Timing)
+- `filterField` - Comma-separated fields to exclude
+- `filterTitle` - Filter by event title
+- `filterAttendee` - Filter by attendee name
+- `filterStatus` - Filter by status (Confirmed, Tentative, etc)
+- `filterAllDay` - Filter all-day events (true/false)
+- `truncate` - Remove video call links (true/false)
+
+See `docs/EVENTS_ENDPOINT.md` for full documentation.
 
 ## Authentication
 

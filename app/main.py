@@ -5,7 +5,7 @@ from starlette.middleware.cors import CORSMiddleware
 
 from app import __version__
 from app.config import validate_config
-from app.routers import health
+from app.routers import health, events
 
 # Validate configuration on startup
 validate_config()
@@ -28,6 +28,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(health.router, tags=["Health"])
+app.include_router(events.router, tags=["Events"])
 
 @app.on_event("startup")
 async def startup_event():
