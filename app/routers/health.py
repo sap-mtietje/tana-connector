@@ -3,20 +3,18 @@
 from fastapi import APIRouter
 from app import __version__
 
-router = APIRouter()
+router = APIRouter(tags=["Health"])
 
-@router.get("/")
+@router.get("/", summary="API Root", description="Get API information and status")
 async def root():
-    """Root endpoint"""
     return {
         "message": "Tana-Connector API",
         "version": __version__,
         "status": "running"
     }
 
-@router.get("/health")
+@router.get("/health", summary="Health Check", description="Check if API is healthy")
 async def health_check():
-    """Health check endpoint"""
     return {
         "status": "healthy",
         "version": __version__

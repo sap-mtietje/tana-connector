@@ -1,42 +1,30 @@
-"""Application configuration management"""
+"""Configuration management"""
 
 import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# Base directory
-BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Auth records storage
-AUTH_RECORDS_DIR = BASE_DIR / "auth_records"
-AUTH_RECORDS_DIR.mkdir(exist_ok=True)
-AUTH_RECORD_PATH = AUTH_RECORDS_DIR / "auth_record.json"
-
-# Microsoft Azure AD / Entra ID credentials
 CLIENT_ID = os.getenv("CLIENT_ID")
 TENANT_ID = os.getenv("TENANT_ID")
 
-# Application settings
+
+GRAPH_SCOPES = ["Calendars.Read"]
+
+
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
 DEBUG = os.getenv("DEBUG", "true").lower() in ("true", "1", "yes")
 
-# Microsoft Graph API scopes
-GRAPH_SCOPES = [
-    "Calendars.Read",
-    "Calendars.ReadWrite",
-    "Mail.Read",
-    "Mail.Send",
-]
+BASE_DIR = Path(__file__).resolve().parent.parent
+AUTH_RECORD_PATH = BASE_DIR / "auth_records" / "auth_record.json"
 
 def validate_config() -> None:
-    """Validate required configuration values"""
+    """Validate that required configuration is present"""
     if not CLIENT_ID:
         raise ValueError("CLIENT_ID is required in .env file")
+    
     if not TENANT_ID:
         raise ValueError("TENANT_ID is required in .env file")
-
-
