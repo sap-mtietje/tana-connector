@@ -1,5 +1,6 @@
 """API routers"""
 
-from . import health, events
+from . import events as events
+from . import health as health
 
 
