@@ -117,4 +117,3 @@ Common fixtures are available in `conftest.py`:
 ## Continuous Integration
 
 The test suite is designed to run in CI/CD pipelines. All tests mock external dependencies (Microsoft Graph API) so they don't require real credentials.
-

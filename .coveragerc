@@ -1,6 +1,6 @@
 [run]
 source = app
-omit = 
+omit =
     */tests/*
     */test_*
     */__pycache__/*
@@ -15,4 +15,3 @@ exclude_lines =
     if __name__ == .__main__.:
     if TYPE_CHECKING:
     @abstractmethod
-

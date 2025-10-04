@@ -17,9 +17,9 @@ async def lifespan(app: FastAPI):
     # Startup
     print("🚀 Tana-Connector server starting...")
     print(f"📝 Version: {__version__}")
-    
+
     yield
-    
+
     # Shutdown
     print("👋 Tana-Connector server shutting down...")
 

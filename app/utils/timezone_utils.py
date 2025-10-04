@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 def get_system_timezone_name() -> str:
     """
     Get the system timezone name for Microsoft Graph API
-    
+
     Auto-detects timezone based on system UTC offset.
     Returns Windows timezone name (e.g., "Central European Standard Time")
     Falls back to "UTC" if detection fails
@@ -17,11 +17,11 @@ def get_system_timezone_name() -> str:
         utc_now = datetime.now(timezone.utc).replace(tzinfo=None)
         offset = local_now - utc_now
         offset_hours = offset.total_seconds() / 3600
-        
+
         # Round to nearest 0.5 hours to handle floating point precision
         # and support half-hour timezones like India (UTC+5:30)
         offset_hours = round(offset_hours * 2) / 2
-        
+
         # Map common offsets to Windows timezone names
         # Reference: https://learn.microsoft.com/en-us/windows-hardware/manufacture/desktop/default-time-zones
         timezone_map = {
@@ -53,7 +53,7 @@ def get_system_timezone_name() -> str:
             11: "Central Pacific Standard Time",
             12: "New Zealand Standard Time",
         }
-        
+
         return timezone_map.get(offset_hours, "UTC")
     except Exception:
         # If anything goes wrong, default to UTC

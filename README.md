@@ -134,5 +134,3 @@ uv run pytest tests/test_date_utils.py
 ## License
 
 MIT
-
-

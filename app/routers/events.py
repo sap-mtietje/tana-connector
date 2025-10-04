@@ -20,18 +20,48 @@ class DescriptionMode(str, Enum):
 
 # Available fields for the fields parameter
 AVAILABLE_FIELDS = [
-    "id", "title", "date", "start", "end", "location", "status", 
-    "attendees", "description", "calendar", "availability", "is_all_day",
-    "organizer", "categories", "web_link", "is_cancelled", "is_online_meeting",
-    "online_meeting_url", "importance", "sensitivity", "is_reminder_on",
-    "reminder_minutes", "is_recurring", "recurrence_pattern", "has_attachments"
+    "id",
+    "title",
+    "date",
+    "start",
+    "end",
+    "location",
+    "status",
+    "attendees",
+    "description",
+    "calendar",
+    "availability",
+    "is_all_day",
+    "organizer",
+    "categories",
+    "web_link",
+    "is_cancelled",
+    "is_online_meeting",
+    "online_meeting_url",
+    "importance",
+    "sensitivity",
+    "is_reminder_on",
+    "reminder_minutes",
+    "is_recurring",
+    "recurrence_pattern",
+    "has_attachments",
 ]
 
 # Available date keywords
 DATE_KEYWORDS = [
-    "today", "tomorrow", "yesterday",
-    "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
-    "this-week", "next-week", "this-month"
+    "today",
+    "tomorrow",
+    "yesterday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+    "this-week",
+    "next-week",
+    "this-month",
 ]
 
 
@@ -61,100 +91,94 @@ Use relative keywords instead of dates:
 )
 async def get_events(
     format: str = Path(
-        ..., 
+        ...,
         pattern="^(json|tana)$",
         description="Response format",
-        examples=["json", "tana"]
+        examples=["json", "tana"],
     ),
     date: Optional[str] = Query(
-        None, 
+        None,
         description=f"Start date. Keywords: {', '.join(DATE_KEYWORDS)} or YYYY-MM-DD format",
-        examples=["today", "tomorrow", "next-week", "2025-10-15"]
+        examples=["today", "tomorrow", "next-week", "2025-10-15"],
     ),
     offset: int = Query(
-        1, 
-        description="Number of days to fetch", 
-        ge=1, 
-        le=365,
-        examples=[1, 7, 30]
+        1, description="Number of days to fetch", ge=1, le=365, examples=[1, 7, 30]
     ),
     filterTitle: Optional[str] = Query(
-        None, 
+        None,
         description="Filter by title (case-insensitive substring match)",
-        examples=["standup", "review"]
+        examples=["standup", "review"],
     ),
     filterAttendee: Optional[str] = Query(
-        None, 
+        None,
         description="Filter by attendee (comma-separated, case-insensitive)",
-        examples=["john@company.com", "john,jane"]
+        examples=["john@company.com", "john,jane"],
     ),
     filterStatus: Optional[str] = Query(
-        None, 
+        None,
         description="Filter by response status (comma-separated). Options: Accepted, Tentative, Declined, No Response",
-        examples=["Accepted", "Accepted,Tentative"]
+        examples=["Accepted", "Accepted,Tentative"],
     ),
     filterAvailability: Optional[str] = Query(
-        None, 
+        None,
         description="Filter by availability (comma-separated). Options: Free, Busy, Tentative, Out of Office, Working Elsewhere",
-        examples=["Busy", "Busy,Tentative"]
+        examples=["Busy", "Busy,Tentative"],
     ),
     filterCategories: Optional[str] = Query(
-        None, 
+        None,
         description="Filter by categories (comma-separated, case-insensitive)",
-        examples=["Work", "Personal,Work"]
+        examples=["Work", "Personal,Work"],
     ),
     includeAllDay: Optional[bool] = Query(
-        None, 
+        None,
         description="Filter all-day events. true=only all-day, false=exclude all-day, null=include both",
-        examples=[True, False, None]
+        examples=[True, False, None],
     ),
     calendar: Optional[str] = Query(
-        None, 
+        None,
         description="Filter by calendar name",
-        examples=["Calendar", "Work Calendar"]
+        examples=["Calendar", "Work Calendar"],
     ),
     tag: str = Query(
-        "meeting", 
+        "meeting",
         description="Base Tana tag for all events",
-        examples=["meeting", "work", "personal"]
+        examples=["meeting", "work", "personal"],
     ),
     includeCategoryTags: bool = Query(
-        False, 
+        False,
         description="Auto-convert categories to Tana tags instead of using base tag",
-        examples=[True, False]
+        examples=[True, False],
     ),
     fieldTags: Optional[str] = Query(
-        None, 
+        None,
         description="Tag specific fields in Tana format (field:tag,field:tag). Supported: attendees, organizer, categories, location",
-        examples=["attendees:co-worker,organizer:manager", "location:office"]
+        examples=["attendees:co-worker,organizer:manager", "location:office"],
     ),
     fields: Optional[str] = Query(
-        None, 
+        None,
         description=f"Include only these fields (comma-separated). Available: {', '.join(sorted(AVAILABLE_FIELDS))}",
-        examples=["date,location,attendees", "start,end,title,status"]
+        examples=["date,location,attendees", "start,end,title,status"],
     ),
     showEmpty: bool = Query(
-        True, 
-        description="Show fields even when empty",
-        examples=[True, False]
+        True, description="Show fields even when empty", examples=[True, False]
     ),
     descriptionMode: DescriptionMode = Query(
-        DescriptionMode.full, 
+        DescriptionMode.full,
         description="Description processing: full=complete, clean=remove meeting links/HTML, none=omit",
-        examples=["full", "clean", "none"]
+        examples=["full", "clean", "none"],
     ),
     descriptionLength: Optional[int] = Query(
-        None, 
+        None,
         description="Max description length (1-5000 characters)",
-        ge=1, 
+        ge=1,
         le=5000,
-        examples=[100, 500, 1000]
+        examples=[100, 500, 1000],
     ),
 ):
     try:
         start_date = parse_relative_date(date) if date else get_today()
         end_date = start_date + timedelta(days=offset)
-        
+
         events = await events_service.get_events(
             start_datetime=start_date,
             end_datetime=end_date,
@@ -162,24 +186,29 @@ async def get_events(
             filter_attendee=filterAttendee.split(",") if filterAttendee else None,
             filter_status=filterStatus.split(",") if filterStatus else None,
             filter_calendar=calendar,
-            filter_availability=filterAvailability.split(",") if filterAvailability else None,
+            filter_availability=filterAvailability.split(",")
+            if filterAvailability
+            else None,
             filter_categories=filterCategories.split(",") if filterCategories else None,
             filter_all_day=includeAllDay,
         )
-        
+
         for event in events:
             if event.get("description"):
                 event["description"] = events_service.process_description(
                     event["description"],
                     mode=descriptionMode.value,
-                    max_length=descriptionLength
+                    max_length=descriptionLength,
                 )
-        
+
         if format == "json":
             if fields:
                 field_list = [f.strip() for f in fields.split(",")]
-                events = [{k: v for k, v in event.items() if k in field_list} for event in events]
-            
+                events = [
+                    {k: v for k, v in event.items() if k in field_list}
+                    for event in events
+                ]
+
             return {
                 "success": True,
                 "count": len(events),
@@ -194,21 +223,21 @@ async def get_events(
                         "availability": filterAvailability,
                         "categories": filterCategories,
                         "allDay": includeAllDay,
-                    }
+                    },
                 },
-                "events": events
+                "events": events,
             }
-        
+
         tana_content = TanaFormatter.format_events(
             events,
             tag=tag,
             filter_fields=fields.split(",") if fields else None,
             include_category_tags=includeCategoryTags,
             show_empty=showEmpty,
-            field_tags=parse_field_tags(fieldTags)
+            field_tags=parse_field_tags(fieldTags),
         )
         return PlainTextResponse(content=tana_content)
-    
+
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:

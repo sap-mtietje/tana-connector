@@ -65,7 +65,7 @@ def sample_event():
 def sample_graph_event():
     """Sample Microsoft Graph API event object"""
     mock_event = MagicMock()
-    
+
     # Basic properties
     mock_event.id = "graph-event-123"
     mock_event.subject = "Test Event"
@@ -77,58 +77,58 @@ def sample_graph_event():
     mock_event.has_attachments = False
     mock_event.web_link = "https://outlook.office.com/event/123"
     mock_event.categories = ["Work"]
-    
+
     # Start and end times
     mock_event.start = MagicMock()
     mock_event.start.date_time = "2025-10-05T10:00:00"
     mock_event.end = MagicMock()
     mock_event.end.date_time = "2025-10-05T11:00:00"
-    
+
     # Location
     mock_event.location = MagicMock()
     mock_event.location.display_name = "Room A"
-    
+
     # Organizer
     mock_event.organizer = MagicMock()
     mock_event.organizer.email_address = MagicMock()
     mock_event.organizer.email_address.address = "organizer@example.com"
-    
+
     # Attendees
     attendee1 = MagicMock()
     attendee1.email_address = MagicMock()
     attendee1.email_address.name = "John Doe"
     attendee1.email_address.address = "john@example.com"
-    
+
     attendee2 = MagicMock()
     attendee2.email_address = MagicMock()
     attendee2.email_address.name = None
     attendee2.email_address.address = "jane@example.com"
-    
+
     mock_event.attendees = [attendee1, attendee2]
-    
+
     # Body/Description
     mock_event.body = MagicMock()
     mock_event.body.content = "<p>Meeting description</p>"
-    
+
     # Response status
     mock_event.response_status = MagicMock()
     mock_event.response_status.response = "Accepted"
-    
+
     # Show as (availability)
     mock_event.show_as = "Busy"
-    
+
     # Importance and sensitivity
     mock_event.importance = "High"
     mock_event.sensitivity = "Normal"
-    
+
     # Event type (for recurrence)
     mock_event.type = "Single"
     mock_event.recurrence = None
-    
+
     # Online meeting
     mock_event.online_meeting = MagicMock()
     mock_event.online_meeting.join_url = "https://teams.microsoft.com/meeting/123"
-    
+
     return mock_event
 
 
@@ -136,20 +136,19 @@ def sample_graph_event():
 def fixed_datetime(monkeypatch):
     """Fixture to freeze datetime.now() for testing"""
     fixed_date = datetime(2025, 10, 5, 12, 0, 0)  # Saturday, Oct 5, 2025
-    
+
     class MockDatetime:
         @classmethod
         def now(cls):
             return fixed_date
-        
+
         @classmethod
         def fromisoformat(cls, date_string):
             return datetime.fromisoformat(date_string)
-        
+
         @classmethod
         def strptime(cls, date_string, format):
             return datetime.strptime(date_string, format)
-    
+
     monkeypatch.setattr("app.utils.date_utils.datetime", MockDatetime)
     return fixed_date
-

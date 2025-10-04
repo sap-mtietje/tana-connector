@@ -201,5 +201,3 @@ We focus on:
 - ✅ Simple, flat structure
 - ✅ Direct imports
 - ✅ Practical solutions
-
-

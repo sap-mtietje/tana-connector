@@ -21,10 +21,11 @@ DEBUG = os.getenv("DEBUG", "true").lower() in ("true", "1", "yes")
 BASE_DIR = Path(__file__).resolve().parent.parent
 AUTH_RECORD_PATH = BASE_DIR / "auth_records" / "auth_record.json"
 
+
 def validate_config() -> None:
     """Validate that required configuration is present"""
     if not CLIENT_ID:
         raise ValueError("CLIENT_ID is required in .env file")
-    
+
     if not TENANT_ID:
         raise ValueError("TENANT_ID is required in .env file")
