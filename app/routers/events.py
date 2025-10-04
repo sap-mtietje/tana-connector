@@ -151,10 +151,10 @@ async def get_events(
         examples=[100, 500, 1000]
     ),
 ):
-    start_date = parse_relative_date(date) if date else get_today()
-    end_date = start_date + timedelta(days=offset)
-    
     try:
+        start_date = parse_relative_date(date) if date else get_today()
+        end_date = start_date + timedelta(days=offset)
+        
         events = await events_service.get_events(
             start_datetime=start_date,
             end_datetime=end_date,
