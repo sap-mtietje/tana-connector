@@ -23,12 +23,12 @@ DESCRIPTION_CLEANUP_PATTERNS = [
     r'Phone conference ID:.*',
     
     # Meeting URLs (to be handled by smart link preservation)
-    r'https?://[^\s]+zoom\.us[^\s]*',
+    r'https?://zoom\.us[^\s]*',
     r'https?://teams\.microsoft\.com[^\s]*',
     r'https?://meet\.google\.com[^\s]*',
-    r'https?://[^\s]*webex\.com[^\s]*',
-    r'https?://[^\s]*gotomeeting\.com[^\s]*',
-    r'https?://[^\s]*bluejeans\.com[^\s]*',
+    r'https?://[^\s]*\.webex\.com[^\s]*',
+    r'https?://[^\s]*\.gotomeeting\.com[^\s]*',
+    r'https?://[^\s]*\.bluejeans\.com[^\s]*',
     
     # Generic meeting phrases
     r'Microsoft Teams\s*',
