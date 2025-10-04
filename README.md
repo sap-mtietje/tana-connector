@@ -107,6 +107,30 @@ See `docs/EVENTS_ENDPOINT.md` for full documentation.
 
 On first run, the server will open a browser for Microsoft authentication. The authentication token is cached securely in your OS keychain, so subsequent runs won't require re-authentication.
 
+## Testing
+
+### Running Tests
+
+```bash
+# Install dev dependencies
+uv sync --all-extras
+
+# Run all tests
+uv run pytest
+
+# Run with coverage report
+uv run pytest --cov=app --cov-report=html
+
+# Run only unit tests
+uv run pytest -m unit
+
+# Run only integration tests
+uv run pytest -m integration
+
+# Run specific test file
+uv run pytest tests/test_date_utils.py
+```
+
 ## License
 
 MIT
