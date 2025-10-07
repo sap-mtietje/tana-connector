@@ -222,3 +222,4 @@ docs/DEVELOPMENT.md
 .gitignore
 docs/AUTHENTICATION.md
 /docsauth_records/
+docs/*
