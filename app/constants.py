@@ -80,14 +80,20 @@ def format_enum(value: str) -> str:
     """Format Graph API enum value for display
 
     Returns friendly name if mapping exists, otherwise capitalizes the value.
+    Strips enum class prefix if present (e.g., "Responsetype.accepted" -> "Accepted")
+
     Examples:
         "tentativelyaccepted" -> "Tentative"
+        "Responsetype.accepted" -> "Accepted"
         "oof" -> "Out of Office"
         "accepted" -> "Accepted"
         "free" -> "Free"
     """
     if not value:
         return ""
+
+    if "." in value:
+        value = value.split(".", 1)[1]
 
     value_lower = value.lower()
     return ENUM_DISPLAY_NAMES.get(value_lower, value_lower.capitalize())

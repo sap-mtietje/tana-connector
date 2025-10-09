@@ -20,7 +20,7 @@ class DescriptionMode(str, Enum):
 
 # Available fields for the fields parameter
 AVAILABLE_FIELDS = [
-    "id",
+    "identifier",  # Event ID
     "title",
     "date",
     "start",
@@ -204,8 +204,15 @@ async def get_events(
         if format == "json":
             if fields:
                 field_list = [f.strip() for f in fields.split(",")]
+                normalized_fields = []
+                for f in field_list:
+                    if f.lower() == "identifier":
+                        normalized_fields.append("id")
+                    elif f.lower() != "id":
+                        normalized_fields.append(f)
+
                 events = [
-                    {k: v for k, v in event.items() if k in field_list}
+                    {k: v for k, v in event.items() if k in normalized_fields}
                     for event in events
                 ]
 

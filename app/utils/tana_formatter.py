@@ -294,8 +294,10 @@ class TanaFormatter:
             lines.append(f"  - {name}:: ")
             for item in items:
                 if tag:
-                    lines.append(f"    - {prefix}{item} #{tag}{suffix}")
+                    # When tag is provided, always wrap in [[ ]] and ignore prefix/suffix
+                    lines.append(f"    - [[{item} #{tag}]]")
                 else:
+                    # When no tag, use prefix/suffix (e.g., for categories)
                     lines.append(f"    - {prefix}{item}{suffix}")
 
     @staticmethod
