@@ -24,7 +24,8 @@ tana-connector/
 │   │
 │   └── utils/                   # Utility functions
 │       ├── __init__.py
-│       └── tana_formatter.py    # Tana paste formatting
+│       ├── tana_formatter.py    # Tana paste formatting
+│       └── description_utils.py # Description processing logic
 │
 ├── docs/                        # Documentation
 │   ├── DEVELOPMENT.md           # Development guide

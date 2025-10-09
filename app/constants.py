@@ -58,8 +58,8 @@ HTML_ENTITIES = {
     "&mdash;": "—",
     "&ndash;": "–",
     "&hellip;": "…",
-    "&lsquo;": """,
-    '&rsquo;': """,
+    "&lsquo;": "'",
+    "&rsquo;": "'",
     "&ldquo;": '"',
     "&rdquo;": '"',
 }
@@ -74,6 +74,52 @@ MEETING_DOMAINS = [
     "bluejeans.com",
     "chime.aws",
     "whereby.com",
+]
+
+# Available fields for events endpoints
+EVENTS_AVAILABLE_FIELDS = [
+    "identifier",  # Event ID (alias for id)
+    "title",
+    "date",
+    "start",
+    "end",
+    "location",
+    "status",
+    "attendees",
+    "description",
+    "calendar",
+    "availability",
+    "is_all_day",
+    "organizer",
+    "categories",
+    "web_link",
+    "is_cancelled",
+    "is_online_meeting",
+    "online_meeting_url",
+    "importance",
+    "sensitivity",
+    "is_reminder_on",
+    "reminder_minutes",
+    "is_recurring",
+    "recurrence_pattern",
+    "has_attachments",
+]
+
+# Date keywords for events endpoints
+EVENTS_DATE_KEYWORDS = [
+    "today",
+    "tomorrow",
+    "yesterday",
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+    "this-week",
+    "next-week",
+    "this-month",
 ]
 
 
