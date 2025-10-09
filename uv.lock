@@ -1477,7 +1477,7 @@ wheels = [
 [[package]]
 name = "tana-connector"
 version = "0.1.0"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "azure-identity" },
     { name = "fastapi" },

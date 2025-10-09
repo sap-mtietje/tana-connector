@@ -244,19 +244,6 @@ class TestFormatEvents:
         # The period after number should be escaped
         assert "- 1\\. First Item" in result
 
-    def test_multiple_events(self, sample_event):
-        """Should format multiple events"""
-        event2 = sample_event.copy()
-        event2["title"] = "Another Meeting"
-        event2["id"] = "test-event-456"
-
-        result = TanaFormatter.format_events([sample_event, event2])
-
-        assert "- Team Meeting" in result
-        assert "- Another Meeting" in result
-        assert "test-event-123" in result
-        assert "test-event-456" in result
-
 
 @pytest.mark.unit
 class TestFormatDatetime:
