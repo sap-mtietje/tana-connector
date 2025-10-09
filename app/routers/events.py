@@ -3,9 +3,10 @@
 from datetime import timedelta
 from enum import Enum
 from typing import Optional
-from fastapi import APIRouter, HTTPException, Path, Query
+from fastapi import APIRouter, HTTPException, Path, Query, Body
 from fastapi.responses import PlainTextResponse
 from app.services.events_service import events_service
+from app.services.template_service import template_service
 from app.utils.tana_formatter import TanaFormatter
 from app.utils.date_utils import parse_relative_date, parse_field_tags, get_today
 
@@ -249,3 +250,194 @@ async def get_events(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to fetch events: {str(e)}")
+
+
+@router.post(
+    "/events",
+    summary="Render events with custom template",
+    description="""
+Render calendar events using a custom Jinja2 template.
+
+## Request Body
+Send a plain text Jinja2 template as the request body with `Content-Type: text/plain`.
+
+## Template Context
+Your template has access to:
+- `events`: List of event objects
+- `count`: Number of events
+- `start_date`: Start date string (YYYY-MM-DD)
+- `end_date`: End date string (YYYY-MM-DD)
+
+## Event Fields
+Each event in the `events` list has these fields:
+- `id`, `title`, `start`, `end`, `date`
+- `location`, `status`, `attendees`, `organizer`
+- `description`, `categories`, `calendar`
+- `availability`, `is_all_day`, `is_cancelled`
+- `is_online_meeting`, `online_meeting_url`, `web_link`
+- `importance`, `sensitivity`, `is_reminder_on`, `reminder_minutes`
+- `is_recurring`, `recurrence_pattern`, `has_attachments`
+
+## Custom Filters
+- `clean`: Clean description (remove HTML, meeting links)
+- `truncate(n)`: Truncate text to n characters
+- `date_format(fmt)`: Format datetime string
+
+## Query Parameters
+Use the same query parameters as GET /events.{format} for filtering:
+- Date/time: `date`, `offset`
+- Filters: `filterTitle`, `filterAttendee`, `filterStatus`, `filterAvailability`, `filterCategories`, `includeAllDay`, `calendar`
+- Options: `descriptionMode`, `descriptionLength`
+
+## Template Examples
+
+Simple:
+```
+{{event.title}} at {{event.location}}
+```
+
+Tana with loops:
+```
+%%tana%%
+{% for event in events %}
+- {{event.title}} #meeting
+  - Date:: [[date:{{event.start}}/{{event.end}}]]
+  - Attendees::
+    {% for attendee in event.attendees %}
+    - [[{{attendee}} #co-worker]]
+    {% endfor %}
+{% endfor %}
+```
+
+With conditionals:
+```
+{% for event in events %}
+{{event.title}}
+{% if event.location %}
+Location: {{event.location}}
+{% endif %}
+{% endfor %}
+```
+""",
+    response_class=PlainTextResponse,
+)
+async def post_events_with_template(
+    template_body: str = Body(
+        ...,
+        media_type="text/plain",
+        description="Jinja2 template string",
+        examples=[
+            "{% for event in events %}{{event.title}} at {{event.location}}\n{% endfor %}",
+            "%%tana%%\n{% for event in events %}\n- {{event.title}} #meeting\n  - Date:: [[date:{{event.start}}/{{event.end}}]]\n{% endfor %}",
+        ],
+    ),
+    date: Optional[str] = Query(
+        None,
+        description=f"Start date. Keywords: {', '.join(DATE_KEYWORDS)} or YYYY-MM-DD format",
+        examples=["today", "tomorrow", "next-week", "2025-10-15"],
+    ),
+    offset: int = Query(
+        1, description="Number of days to fetch", ge=1, le=365, examples=[1, 7, 30]
+    ),
+    filterTitle: Optional[str] = Query(
+        None,
+        description="Filter by title (case-insensitive substring match)",
+        examples=["standup", "review"],
+    ),
+    filterAttendee: Optional[str] = Query(
+        None,
+        description="Filter by attendee (comma-separated, case-insensitive)",
+        examples=["john@company.com", "john,jane"],
+    ),
+    filterStatus: Optional[str] = Query(
+        None,
+        description="Filter by response status (comma-separated, case-sensitive). Values: Accepted, Declined, Tentative, No Response, None, Organizer. Maps from Graph API responseStatus.response field.",
+        examples=["Accepted", "Organizer", "Accepted,No Response"],
+    ),
+    filterAvailability: Optional[str] = Query(
+        None,
+        description="Filter by availability/show-as status (comma-separated, case-sensitive). Values: Free, Busy, Tentative, Out of Office, Working Elsewhere, Unknown. Maps from Graph API showAs field.",
+        examples=["Busy", "Out of Office", "Busy,Tentative"],
+    ),
+    filterCategories: Optional[str] = Query(
+        None,
+        description="Filter by categories (comma-separated, case-insensitive)",
+        examples=["Work", "Personal,Work"],
+    ),
+    includeAllDay: Optional[bool] = Query(
+        None,
+        description="Filter all-day events. true=only all-day, false=exclude all-day, null=include both",
+        examples=[True, False, None],
+    ),
+    calendar: Optional[str] = Query(
+        None,
+        description="Filter by calendar name",
+        examples=["Calendar", "Work Calendar"],
+    ),
+    descriptionMode: DescriptionMode = Query(
+        DescriptionMode.full,
+        description="Description processing: full=complete, clean=remove meeting links/HTML, none=omit",
+        examples=["full", "clean", "none"],
+    ),
+    descriptionLength: Optional[int] = Query(
+        None,
+        description="Max description length (1-5000 characters)",
+        ge=1,
+        le=5000,
+        examples=[100, 500, 1000],
+    ),
+):
+    """Render events with a custom Jinja2 template"""
+    # Validate template body
+    if not template_body or not template_body.strip():
+        raise HTTPException(
+            status_code=400, detail="Template body is required and cannot be empty"
+        )
+
+    try:
+        template_string = template_body
+
+        # Parse date parameters
+        start_date = parse_relative_date(date) if date else get_today()
+        end_date = start_date + timedelta(days=offset)
+
+        # Fetch events using the same logic as GET endpoint
+        events = await events_service.get_events(
+            start_datetime=start_date,
+            end_datetime=end_date,
+            filter_title=[filterTitle] if filterTitle else None,
+            filter_attendee=filterAttendee.split(",") if filterAttendee else None,
+            filter_status=filterStatus.split(",") if filterStatus else None,
+            filter_calendar=calendar,
+            filter_availability=filterAvailability.split(",")
+            if filterAvailability
+            else None,
+            filter_categories=filterCategories.split(",") if filterCategories else None,
+            filter_all_day=includeAllDay,
+        )
+
+        # Process descriptions
+        for event in events:
+            if event.get("description"):
+                event["description"] = events_service.process_description(
+                    event["description"],
+                    mode=descriptionMode.value,
+                    max_length=descriptionLength,
+                )
+
+        # Render template
+        rendered_output = template_service.render_template(
+            template_string=template_string,
+            events=events,
+            start_date=start_date.strftime("%Y-%m-%d"),
+            end_date=end_date.strftime("%Y-%m-%d"),
+        )
+
+        return PlainTextResponse(content=rendered_output)
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(
+            status_code=500, detail=f"Failed to render template: {str(e)}"
+        )

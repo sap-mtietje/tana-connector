@@ -5,8 +5,43 @@ A local FastAPI server that enables integration between [Tana](https://tana.inc)
 ## Features
 
 - 📅 Fetch Outlook calendar events and paste into Tana
+- 🎨 Custom template rendering with Jinja2 for flexible output formats
 - ✉️ Draft emails based on Tana content
 
+## API Endpoints
+
+### GET `/events.{format}`
+
+Fetch calendar events in JSON or Tana Paste format with pre-defined formatting.
+
+```bash
+# Get events in JSON format
+curl "http://localhost:8000/events.json?date=tomorrow&offset=7"
+
+# Get events in Tana format
+curl "http://localhost:8000/events.tana?date=today&includeAllDay=false"
+```
+
+### POST `/events`
+
+Render calendar events using custom Jinja2 templates for maximum flexibility.
+
+```bash
+# Use a custom Tana template
+curl -X POST "http://localhost:8000/events?date=tomorrow&includeAllDay=false" \
+  -H "Content-Type: text/plain" \
+  --data-binary @examples/meeting-template.tana
+
+# Use a Markdown template
+curl -X POST "http://localhost:8000/events?date=this-week&offset=7" \
+  -H "Content-Type: text/plain" \
+  --data-binary @examples/meeting-template.md
+
+# Inline template
+curl -X POST "http://localhost:8000/events?date=today" \
+  -H "Content-Type: text/plain" \
+  -d "{% for event in events %}{{event.title}} at {{event.start}}{% endfor %}"
+```
 
 ## Quick Start
 
