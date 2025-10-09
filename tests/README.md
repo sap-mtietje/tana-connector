@@ -60,18 +60,38 @@ pytest -v
 
 ```
 tests/
-├── conftest.py              # Shared fixtures and configuration
-├── test_date_utils.py       # Unit tests for date utilities (24 tests)
-├── test_tana_formatter.py   # Unit tests for Tana formatting (39 tests)
-├── test_events_service.py   # Unit tests for events service (32 tests)
-├── test_auth_service.py     # Unit tests for authentication (14 tests)
-├── test_graph_service.py    # Unit tests for Graph API (7 tests)
-└── test_api_endpoints.py    # Integration tests for API endpoints (38 tests)
+├── conftest.py              # Shared fixtures (TestClient, sample objects, time freeze)
+├── fixtures/
+│   └── factories.py         # Builders for events and Graph event mocks
+├── unit/
+│   ├── services/
+│   │   ├── test_auth_service.py
+│   │   ├── test_graph_service.py
+│   │   ├── test_events_service.py
+│   │   └── test_template_service.py
+│   └── utils/
+│       ├── test_date_utils.py
+│       └── test_tana_formatter.py
+└── integration/
+    └── api/
+        ├── test_health.py
+        ├── test_events_json.py
+        ├── test_events_tana.py
+        ├── test_events_post.py
+        ├── test_events_errors.py
+        └── test_events_query_params.py
 ```
 
-**Total: 154 tests**
+Conventions:
+- Markers: `@pytest.mark.unit` for unit tests, `@pytest.mark.integration` for integration.
+- Use parametrization for table-like cases (e.g., query parsing, description modes).
+- Prefer factories for data setup over ad-hoc dicts.
 
-See [GRAPH_API_TESTS.md](./GRAPH_API_TESTS.md) for detailed documentation on Graph API and authentication tests.
+Run with coverage and open report:
+
+```bash
+pytest --cov=app --cov-report=html && open htmlcov/index.html
+```
 
 ## Test Coverage
 

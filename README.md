@@ -20,6 +20,11 @@ curl "http://localhost:8000/events.json?date=tomorrow&offset=7"
 
 # Get events in Tana format
 curl "http://localhost:8000/events.tana?date=today&includeAllDay=false"
+
+# Render using a custom template
+curl -X POST "http://localhost:8000/events?date=this-week&offset=7" \
+  -H "Content-Type: text/plain" \
+  --data-binary @examples/meeting-template.tana
 ```
 
 ### POST `/events`
@@ -89,11 +94,11 @@ The server will start at `http://localhost:8000`
 
 ## Authentication
 
-On first run, the server will open a browser for Microsoft authentication. The authentication token is cached securely in your OS keychain, so subsequent runs won't require re-authentication.
+On first run, the server will open a browser for Microsoft authentication. An auth record is stored in `auth_records/auth_record.json` and tokens are cached securely in your OS keychain. Subsequent runs won't require re-authentication.
 
 ## Testing
 
-### Running Tests
+See `docs/TESTING.md` for more. Quick commands:
 
 ```bash
 # Install dev dependencies
@@ -130,4 +135,21 @@ tana-connector/
 │   └── features/               # Feature specifications
 ├── app.py                      # Entry point
 └── .env.example                # Environment variables template
+```
+
+## Documentation
+
+- API overview and curl examples: `docs/API.md`
+- Graph events response mapping: `docs/GRAPH_EVENTS_RESPONSE.md`
+- Authentication details: `docs/AUTHENTICATION.md`
+- Development workflow: `docs/DEVELOPMENT.md`
+- Testing guide: `docs/TESTING.md`
+- Troubleshooting: `docs/TROUBLESHOOTING.md`
+
+## Environment
+
+Create a `.env` from the example:
+
+```bash
+cp .env.example .env
 ```
