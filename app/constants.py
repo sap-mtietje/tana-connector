@@ -3,6 +3,7 @@
 ENUM_DISPLAY_NAMES = {
     "tentativelyaccepted": "Tentative",
     "notresponded": "No Response",
+    "none_": "None",
     "oof": "Out of Office",
     "workingelsewhere": "Working Elsewhere",
 }

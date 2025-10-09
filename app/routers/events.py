@@ -116,13 +116,13 @@ async def get_events(
     ),
     filterStatus: Optional[str] = Query(
         None,
-        description="Filter by response status (comma-separated). Options: Accepted, Tentative, Declined, No Response",
-        examples=["Accepted", "Accepted,Tentative"],
+        description="Filter by response status (comma-separated, case-sensitive). Values: Accepted, Declined, Tentative, No Response, None, Organizer",
+        examples=["Accepted", "Organizer", "Accepted,No Response"],
     ),
     filterAvailability: Optional[str] = Query(
         None,
-        description="Filter by availability (comma-separated). Options: Free, Busy, Tentative, Out of Office, Working Elsewhere",
-        examples=["Busy", "Busy,Tentative"],
+        description="Filter by availability (comma-separated, case-sensitive). Values: Free, Busy, Tentative, Out of Office, Working Elsewhere, Unknown.",
+        examples=["Busy", "Out of Office", "Busy,Tentative"],
     ),
     filterCategories: Optional[str] = Query(
         None,
