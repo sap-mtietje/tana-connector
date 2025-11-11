@@ -6,7 +6,7 @@ A local FastAPI server that enables integration between [Tana](https://tana.inc)
 
 - 📅 Fetch Outlook calendar events and paste into Tana
 - 🎨 Custom template rendering with Jinja2 for flexible output formats
-- ✉️ Draft emails based on Tana content
+- SwiftBar setup for controlling tana-connector from the menu bar
 
 ## API Endpoints
 
@@ -81,15 +81,34 @@ Use the startup script that handles all prerequisites:
 
 ## Running the Server
 
+### Command Line
+
 ```bash
 # Using the entry point
-uv run app.py
+uv run python app.py
 ```
 
 The server will start at `http://localhost:8000`
 
 - API docs: `http://localhost:8000/docs`
 - Health check: `http://localhost:8000/health`
+
+### macOS Menu Bar (SwiftBar)
+
+
+```bash
+# Install SwiftBar
+brew install swiftbar
+
+# Create a directory for the plugin
+mkdir -p ~/SwiftBar-Plugins
+
+# Symlink the plugin (replace path/to/tana-connector with your actual path)
+ln -s path/to/tana-connector/scripts/swiftbar/tana-connector.sh ~/SwiftBar-Plugins/
+
+# Make scripts executable
+find . -type f -name "*.sh" -exec echo "Making executable:" {} \; -exec chmod +x {} \;
+```
 
 
 ## Authentication
@@ -132,19 +151,12 @@ tana-connector/
 │   ├── models/                 # Pydantic models
 │   └── utils/                  # Utilities (Tana formatting)
 ├── docs/
-│   └── features/               # Feature specifications
+├── scripts/                    # documentation
+│   └── swiftbar/               # macOS menu bar integration
 ├── app.py                      # Entry point
+├── start.sh                    # Interactive startup script
 └── .env.example                # Environment variables template
 ```
-
-## Documentation
-
-- API overview and curl examples: `docs/API.md`
-- Graph events response mapping: `docs/GRAPH_EVENTS_RESPONSE.md`
-- Authentication details: `docs/AUTHENTICATION.md`
-- Development workflow: `docs/DEVELOPMENT.md`
-- Testing guide: `docs/TESTING.md`
-- Troubleshooting: `docs/TROUBLESHOOTING.md`
 
 ## Environment
 
