@@ -32,7 +32,7 @@ if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1; then
     PID=$(lsof -Pi :$PORT -sTCP:LISTEN -t)
 
     # Menu bar - Running
-    echo ":play.circle.fill:  | sfcolor=green"
+    echo ":play.circle.fill: tana | sfcolor=green"
 
     # Dropdown menu
     echo "---"
@@ -46,7 +46,7 @@ if lsof -Pi :$PORT -sTCP:LISTEN -t >/dev/null 2>&1; then
 
 else
     # Server is stopped
-    echo ":stop.circle.fill: | sfcolor=red"
+    echo ":stop.circle.fill: tana| sfcolor=red"
 
     echo "---"
     echo "Stopped | sfimage=xmark.circle.fill"
