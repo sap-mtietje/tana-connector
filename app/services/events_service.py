@@ -59,6 +59,9 @@ class EventsService:
         for event in result.value:
             event_data = self._parse_event(event)
 
+            if event_data.get("availability") == "Free":
+                continue
+
             if filter_title and not any(
                 t.lower() in event_data["title"].lower() for t in filter_title
             ):
