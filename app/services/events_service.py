@@ -30,6 +30,7 @@ class EventsService:
         filter_availability: Optional[List[str]] = None,
         filter_categories: Optional[List[str]] = None,
         filter_all_day: Optional[bool] = None,
+        exclude_private: bool = True,  # Default to exclude "Private" category
     ) -> List[Dict[str, Any]]:
         """Get calendar events from Microsoft Graph API in local timezone"""
         client = await graph_service.get_client()
@@ -96,6 +97,11 @@ class EventsService:
                 is_all_day = event_data.get("is_all_day", False)
                 if filter_all_day != is_all_day:
                     continue
+
+            if exclude_private and "private" in [
+                cat.lower() for cat in event_data.get("categories", [])
+            ]:
+                continue
 
             events.append(event_data)
 
