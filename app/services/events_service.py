@@ -41,6 +41,7 @@ class EventsService:
             CalendarViewRequestBuilder.CalendarViewRequestBuilderGetQueryParameters(
                 start_date_time=start_str,
                 end_date_time=end_str,
+                top=50
             )
         )
 
