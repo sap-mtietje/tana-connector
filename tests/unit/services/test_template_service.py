@@ -12,7 +12,6 @@ class TestTemplateServiceInitialization:
         """Should initialize with Jinja2 environment"""
         service = TemplateService()
         assert service.env is not None
-        assert service.env.undefined.__name__ == "StrictUndefined"
 
     def test_custom_filters_registered(self):
         """Should have custom filters registered"""
@@ -116,16 +115,16 @@ class TestTemplateServiceRendering:
 class TestTemplateServiceErrors:
     """Tests for error handling"""
 
-    def test_undefined_variable_raises_error(self):
-        """Should raise ValueError for undefined variables"""
+    def test_undefined_variable_renders_empty(self):
+        """Should render empty string for undefined variables (lenient mode)"""
         service = TemplateService()
         events = [{"title": "Meeting"}]
         template = "{{events[0].title}} at {{events[0].nonexistent_field}}"
 
-        with pytest.raises(ValueError) as exc_info:
-            service.render_template(template, events, "2025-10-09", "2025-10-10")
+        result = service.render_template(template, events, "2025-10-09", "2025-10-10")
 
-        assert "Undefined variable" in str(exc_info.value)
+        # Missing fields render as empty string instead of raising error
+        assert result == "Meeting at "
 
     def test_invalid_template_syntax_raises_error(self):
         """Should raise ValueError for invalid template syntax"""

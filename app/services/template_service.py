@@ -1,7 +1,7 @@
 """Template rendering service using Jinja2"""
 
 from typing import Any, Dict, List
-from jinja2 import Environment, StrictUndefined, TemplateSyntaxError, UndefinedError
+from jinja2 import Environment, TemplateSyntaxError, UndefinedError
 from app.utils.description_utils import process_description
 
 
@@ -11,7 +11,6 @@ class TemplateService:
     def __init__(self):
         """Initialize Jinja2 environment with custom filters"""
         self.env = Environment(
-            undefined=StrictUndefined,  # Fail on undefined variables
             trim_blocks=True,
             lstrip_blocks=True,
         )
