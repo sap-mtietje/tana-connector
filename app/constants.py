@@ -1,13 +1,5 @@
 """Application-wide constants"""
 
-ENUM_DISPLAY_NAMES = {
-    "tentativelyaccepted": "Tentative",
-    "notresponded": "No Response",
-    "none_": "None",
-    "oof": "Out of Office",
-    "workingelsewhere": "Working Elsewhere",
-}
-
 # Description cleanup patterns for "clean" mode
 DESCRIPTION_CLEANUP_PATTERNS = [
     r"_{5,}",
@@ -75,72 +67,3 @@ MEETING_DOMAINS = [
     "chime.aws",
     "whereby.com",
 ]
-
-# Available fields for events endpoints
-EVENTS_AVAILABLE_FIELDS = [
-    "identifier",  # Event ID (alias for id)
-    "title",
-    "date",
-    "start",
-    "end",
-    "location",
-    "status",
-    "attendees",
-    "description",
-    "calendar",
-    "availability",
-    "is_all_day",
-    "organizer",
-    "categories",
-    "web_link",
-    "is_cancelled",
-    "is_online_meeting",
-    "online_meeting_url",
-    "importance",
-    "sensitivity",
-    "is_reminder_on",
-    "reminder_minutes",
-    "is_recurring",
-    "recurrence_pattern",
-    "has_attachments",
-]
-
-# Date keywords for events endpoints
-EVENTS_DATE_KEYWORDS = [
-    "today",
-    "tomorrow",
-    "yesterday",
-    "monday",
-    "tuesday",
-    "wednesday",
-    "thursday",
-    "friday",
-    "saturday",
-    "sunday",
-    "this-week",
-    "next-week",
-    "this-month",
-]
-
-
-def format_enum(value: str) -> str:
-    """Format Graph API enum value for display
-
-    Returns friendly name if mapping exists, otherwise capitalizes the value.
-    Strips enum class prefix if present (e.g., "Responsetype.accepted" -> "Accepted")
-
-    Examples:
-        "tentativelyaccepted" -> "Tentative"
-        "Responsetype.accepted" -> "Accepted"
-        "oof" -> "Out of Office"
-        "accepted" -> "Accepted"
-        "free" -> "Free"
-    """
-    if not value:
-        return ""
-
-    if "." in value:
-        value = value.split(".", 1)[1]
-
-    value_lower = value.lower()
-    return ENUM_DISPLAY_NAMES.get(value_lower, value_lower.capitalize())

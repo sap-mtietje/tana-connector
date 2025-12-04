@@ -1,124 +1,154 @@
 """Test factories for building common objects"""
 
 from copy import deepcopy
-from unittest.mock import MagicMock
 
 
-BASE_EVENT = {
-    "id": "test-event-123",
-    "title": "Team Meeting",
-    "start": "2025-10-05T10:00:00",
-    "end": "2025-10-05T11:00:00",
-    "date": "2025-10-05T10:00:00/2025-10-05T11:00:00",
-    "location": "Conference Room A",
-    "status": "Accepted",
-    "attendees": ["John Doe", "jane@example.com"],
-    "description": "Weekly team sync",
-    "calendar": "Calendar",
-    "availability": "Busy",
-    "is_all_day": False,
-    "organizer": "organizer@example.com",
+# MS Graph format (used by /me/CalendarView endpoints)
+BASE_MS_GRAPH_EVENT = {
+    "id": "graph-event-123",
+    "subject": "Team Meeting",
+    "bodyPreview": "Weekly team sync",
+    "body": {
+        "contentType": "html",
+        "content": "<p>Weekly team sync</p>",
+    },
+    "start": {
+        "dateTime": "2025-10-05T10:00:00",
+        "timeZone": "Europe/Berlin",
+    },
+    "end": {
+        "dateTime": "2025-10-05T11:00:00",
+        "timeZone": "Europe/Berlin",
+    },
+    "location": {
+        "displayName": "Conference Room A",
+        "locationType": "default",
+    },
+    "attendees": [
+        {
+            "type": "required",
+            "status": {"response": "accepted", "time": "2025-10-01T10:00:00"},
+            "emailAddress": {"name": "John Doe", "address": "john@example.com"},
+        },
+        {
+            "type": "optional",
+            "status": {"response": "tentativelyAccepted", "time": None},
+            "emailAddress": {"name": "Jane Smith", "address": "jane@example.com"},
+        },
+    ],
+    "organizer": {
+        "emailAddress": {"name": "Organizer", "address": "organizer@example.com"}
+    },
+    "responseStatus": {"response": "accepted", "time": "2025-10-01T10:00:00"},
     "categories": ["Work", "Important"],
-    "web_link": "https://outlook.office.com/event/123",
-    "is_cancelled": False,
-    "is_online_meeting": True,
-    "online_meeting_url": "https://teams.microsoft.com/meeting/123",
-    "importance": "High",
-    "sensitivity": "Normal",
-    "is_reminder_on": True,
-    "reminder_minutes": 15,
-    "is_recurring": False,
-    "recurrence_pattern": "",
-    "has_attachments": False,
+    "importance": "high",
+    "sensitivity": "normal",
+    "showAs": "busy",
+    "isAllDay": False,
+    "isCancelled": False,
+    "isOnlineMeeting": True,
+    "onlineMeeting": {"joinUrl": "https://teams.microsoft.com/meeting/123"},
+    "onlineMeetingUrl": "https://teams.microsoft.com/meeting/123",
+    "webLink": "https://outlook.office.com/event/123",
+    "hasAttachments": False,
+    "isReminderOn": True,
+    "reminderMinutesBeforeStart": 15,
+    "recurrence": None,
+    "type": "singleInstance",
 }
 
 
-def make_event(**overrides):
-    """Return a dict event based on BASE_EVENT with overrides applied."""
-    event = deepcopy(BASE_EVENT)
-    event.update(overrides)
+def make_ms_graph_event(**overrides):
+    """
+    Return a dict event in MS Graph JSON format (as returned by calendar_service).
+    This is the format used by the new /me/CalendarView endpoints.
+    """
+    event = deepcopy(BASE_MS_GRAPH_EVENT)
+
+    # Handle nested updates
+    for key, value in overrides.items():
+        if key in event and isinstance(event[key], dict) and isinstance(value, dict):
+            event[key].update(value)
+        else:
+            event[key] = value
+
     return event
 
 
-def make_graph_event(**overrides):
-    """Return a MagicMock that simulates a Microsoft Graph event object."""
-    mock_event = MagicMock()
-
-    # Basic properties
-    mock_event.id = overrides.get("id", "graph-event-123")
-    mock_event.subject = overrides.get("subject", "Test Event")
-    mock_event.is_all_day = overrides.get("is_all_day", False)
-    mock_event.is_cancelled = overrides.get("is_cancelled", False)
-    mock_event.is_online_meeting = overrides.get("is_online_meeting", True)
-    mock_event.is_reminder_on = overrides.get("is_reminder_on", True)
-    mock_event.reminder_minutes_before_start = overrides.get(
-        "reminder_minutes_before_start", 15
-    )
-    mock_event.has_attachments = overrides.get("has_attachments", False)
-    mock_event.web_link = overrides.get(
-        "web_link", "https://outlook.office.com/event/123"
-    )
-    mock_event.categories = overrides.get("categories", ["Work"])  # list[str]
-
-    # Start and end times
-    mock_event.start = MagicMock()
-    mock_event.start.date_time = overrides.get("start", "2025-10-05T10:00:00")
-    mock_event.end = MagicMock()
-    mock_event.end.date_time = overrides.get("end", "2025-10-05T11:00:00")
-
-    # Location
-    mock_event.location = MagicMock()
-    mock_event.location.display_name = overrides.get("location", "Room A")
-
-    # Organizer
-    mock_event.organizer = MagicMock()
-    mock_event.organizer.email_address = MagicMock()
-    mock_event.organizer.email_address.address = overrides.get(
-        "organizer", "organizer@example.com"
-    )
-
-    # Attendees
-    attendee1 = MagicMock()
-    attendee1.email_address = MagicMock()
-    attendee1.email_address.name = overrides.get("attendee1_name", "John Doe")
-    attendee1.email_address.address = overrides.get(
-        "attendee1_email", "john@example.com"
-    )
-
-    attendee2 = MagicMock()
-    attendee2.email_address = MagicMock()
-    attendee2.email_address.name = overrides.get("attendee2_name", None)
-    attendee2.email_address.address = overrides.get(
-        "attendee2_email", "jane@example.com"
-    )
-
-    mock_event.attendees = overrides.get("attendees", [attendee1, attendee2])
-
-    # Body/Description
-    mock_event.body = MagicMock()
-    mock_event.body.content = overrides.get(
-        "body_content", "<p>Meeting description</p>"
-    )
-
-    # Response status
-    mock_event.response_status = MagicMock()
-    mock_event.response_status.response = overrides.get("response", "Accepted")
-
-    # Show as (availability)
-    mock_event.show_as = overrides.get("show_as", "Busy")
-
-    # Importance and sensitivity
-    mock_event.importance = overrides.get("importance", "High")
-    mock_event.sensitivity = overrides.get("sensitivity", "Normal")
-
-    # Event type (for recurrence)
-    mock_event.type = overrides.get("type", "Single")
-    mock_event.recurrence = overrides.get("recurrence", None)
-
-    # Online meeting
-    mock_event.online_meeting = MagicMock()
-    mock_event.online_meeting.join_url = overrides.get(
-        "online_meeting_url", "https://teams.microsoft.com/meeting/123"
-    )
-
-    return mock_event
+def make_ms_graph_event_set():
+    """
+    Create a diverse set of MS Graph events for comprehensive filter testing.
+    Returns a list of events with varying properties.
+    """
+    return [
+        # Event 1: High importance, busy, online meeting, accepted
+        make_ms_graph_event(
+            id="event-1",
+            subject="Important Strategy Meeting",
+            importance="high",
+            sensitivity="normal",
+            showAs="busy",
+            isAllDay=False,
+            isOnlineMeeting=True,
+            isCancelled=False,
+            hasAttachments=True,
+            categories=["Work", "Strategy"],
+            responseStatus={"response": "accepted", "time": "2025-10-01T10:00:00"},
+        ),
+        # Event 2: Normal importance, free, in-person, tentative
+        make_ms_graph_event(
+            id="event-2",
+            subject="Casual Lunch",
+            importance="normal",
+            sensitivity="personal",
+            showAs="free",
+            isAllDay=False,
+            isOnlineMeeting=False,
+            isCancelled=False,
+            hasAttachments=False,
+            categories=["Personal"],
+            responseStatus={"response": "tentativelyAccepted", "time": None},
+        ),
+        # Event 3: Low importance, tentative, all-day, declined
+        make_ms_graph_event(
+            id="event-3",
+            subject="Company Holiday",
+            importance="low",
+            sensitivity="normal",
+            showAs="tentative",
+            isAllDay=True,
+            isOnlineMeeting=False,
+            isCancelled=False,
+            hasAttachments=False,
+            categories=["Holiday"],
+            responseStatus={"response": "declined", "time": "2025-10-02T08:00:00"},
+        ),
+        # Event 4: High importance, oof (out of office), cancelled
+        make_ms_graph_event(
+            id="event-4",
+            subject="Cancelled Review",
+            importance="high",
+            sensitivity="private",
+            showAs="oof",
+            isAllDay=False,
+            isOnlineMeeting=True,
+            isCancelled=True,
+            hasAttachments=False,
+            categories=["Work"],
+            responseStatus={"response": "notResponded", "time": None},
+        ),
+        # Event 5: Normal importance, workingElsewhere, organizer
+        make_ms_graph_event(
+            id="event-5",
+            subject="Remote Work Day",
+            importance="normal",
+            sensitivity="confidential",
+            showAs="workingElsewhere",
+            isAllDay=True,
+            isOnlineMeeting=False,
+            isCancelled=False,
+            hasAttachments=False,
+            categories=["Work", "Remote"],
+            responseStatus={"response": "organizer", "time": "2025-10-01T09:00:00"},
+        ),
+    ]

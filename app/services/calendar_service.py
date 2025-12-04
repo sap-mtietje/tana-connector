@@ -4,7 +4,6 @@ from typing import Optional, List, Dict, Any
 from msgraph.generated.users.item.calendar_view.calendar_view_request_builder import (
     CalendarViewRequestBuilder,
 )
-from kiota_abstractions.base_request_configuration import RequestConfiguration
 
 from app.services.graph_service import graph_service
 from app.utils.timezone_utils import get_system_timezone_name
@@ -31,8 +30,10 @@ class CalendarService:
         """
         client = await graph_service.get_client()
 
-        query_params = (
-            CalendarViewRequestBuilder.CalendarViewRequestBuilderGetQueryParameters(
+        # Use the new RequestConfiguration pattern (avoids deprecation warning)
+        timezone_name = get_system_timezone_name()
+        request_config = CalendarViewRequestBuilder.CalendarViewRequestBuilderGetRequestConfiguration(
+            query_parameters=CalendarViewRequestBuilder.CalendarViewRequestBuilderGetQueryParameters(
                 start_date_time=start_date_time,
                 end_date_time=end_date_time,
                 select=select,
@@ -41,12 +42,8 @@ class CalendarService:
                 top=top,
                 skip=skip,
                 expand=expand,
-            )
+            ),
         )
-
-        # Set timezone preference
-        timezone_name = get_system_timezone_name()
-        request_config = RequestConfiguration(query_parameters=query_params)
         request_config.headers.add("Prefer", f'outlook.timezone="{timezone_name}"')
 
         result = await client.me.calendar_view.get(request_configuration=request_config)

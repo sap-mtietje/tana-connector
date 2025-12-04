@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 from jinja2 import Environment, StrictUndefined, TemplateSyntaxError, UndefinedError
-from app.services.events_service import events_service
+from app.utils.description_utils import process_description
 
 
 class TemplateService:
@@ -74,7 +74,7 @@ class TemplateService:
         """
         if not text:
             return ""
-        return events_service.process_description(text, mode="clean")
+        return process_description(text, mode="clean")
 
     @staticmethod
     def _truncate_filter(text: str, length: int = 100) -> str:

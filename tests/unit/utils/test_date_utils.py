@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from app.utils.date_utils import (
     get_today,
     parse_relative_date,
+    parse_date_keyword_to_range,
     parse_field_tags,
     _get_next_weekday,
 )
@@ -146,6 +147,96 @@ class TestGetNextWeekday:
         # days_ahead = 4 - 6 = -2, add 7 = 5 days
         assert result == today + timedelta(days=5)
         assert result.weekday() == 4  # Should be Friday
+
+
+@pytest.mark.unit
+class TestParseDateKeywordToRange:
+    """Tests for parse_date_keyword_to_range function"""
+
+    def test_today_range(self, fixed_datetime):
+        """Should return today's full day range"""
+        start, end = parse_date_keyword_to_range("today")
+        assert start == datetime(2025, 10, 5, 0, 0, 0)
+        assert end == datetime(2025, 10, 5, 23, 59, 59)
+
+    def test_tomorrow_range(self, fixed_datetime):
+        """Should return tomorrow's full day range"""
+        start, end = parse_date_keyword_to_range("tomorrow")
+        assert start == datetime(2025, 10, 6, 0, 0, 0)
+        assert end == datetime(2025, 10, 6, 23, 59, 59)
+
+    def test_yesterday_range(self, fixed_datetime):
+        """Should return yesterday's full day range"""
+        start, end = parse_date_keyword_to_range("yesterday")
+        assert start == datetime(2025, 10, 4, 0, 0, 0)
+        assert end == datetime(2025, 10, 4, 23, 59, 59)
+
+    def test_this_week_range(self, fixed_datetime):
+        """Should return Monday to Sunday of current week"""
+        start, end = parse_date_keyword_to_range("this-week")
+        # Oct 5, 2025 is Sunday, so Monday is Sep 29
+        assert start == datetime(2025, 9, 29, 0, 0, 0)
+        assert end == datetime(2025, 10, 5, 23, 59, 59)
+
+    def test_next_week_range(self, fixed_datetime):
+        """Should return Monday to Sunday of next week"""
+        start, end = parse_date_keyword_to_range("next-week")
+        # Oct 5, 2025 is Sunday, next Monday is Oct 6
+        assert start == datetime(2025, 10, 6, 0, 0, 0)
+        assert end == datetime(2025, 10, 12, 23, 59, 59)
+
+    def test_this_month_range(self, fixed_datetime):
+        """Should return first to last day of current month"""
+        start, end = parse_date_keyword_to_range("this-month")
+        assert start == datetime(2025, 10, 1, 0, 0, 0)
+        assert end == datetime(2025, 10, 31, 23, 59, 59)
+
+    def test_weekday_range(self, fixed_datetime):
+        """Should return full day range for weekday keyword"""
+        start, end = parse_date_keyword_to_range("monday")
+        # Oct 5 is Sunday, next Monday is Oct 6
+        assert start == datetime(2025, 10, 6, 0, 0, 0)
+        assert end == datetime(2025, 10, 6, 23, 59, 59)
+
+    def test_invalid_keyword_raises_error(self, fixed_datetime):
+        """Should raise ValueError for invalid keyword"""
+        with pytest.raises(ValueError, match="Invalid date keyword"):
+            parse_date_keyword_to_range("invalid-keyword")
+
+    def test_case_insensitive(self, fixed_datetime):
+        """Should handle case-insensitive keywords"""
+        start1, end1 = parse_date_keyword_to_range("TODAY")
+        start2, end2 = parse_date_keyword_to_range("today")
+        assert start1 == start2
+        assert end1 == end2
+
+
+@pytest.mark.unit
+class TestParseDateKeywordToRangeDecember:
+    """Tests for parse_date_keyword_to_range with December edge case"""
+
+    def test_this_month_december(self, monkeypatch):
+        """Should handle December correctly (year rollover)"""
+        fixed_date = datetime(2025, 12, 15, 12, 0, 0)
+
+        class MockDatetime:
+            @classmethod
+            def now(cls):
+                return fixed_date
+
+            @classmethod
+            def fromisoformat(cls, date_string):
+                return datetime.fromisoformat(date_string)
+
+            @classmethod
+            def strptime(cls, date_string, format):
+                return datetime.strptime(date_string, format)
+
+        monkeypatch.setattr("app.utils.date_utils.datetime", MockDatetime)
+
+        start, end = parse_date_keyword_to_range("this-month")
+        assert start == datetime(2025, 12, 1, 0, 0, 0)
+        assert end == datetime(2025, 12, 31, 23, 59, 59)
 
 
 @pytest.mark.unit
