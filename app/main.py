@@ -7,6 +7,7 @@ from starlette.middleware.cors import CORSMiddleware
 from app import __version__
 from app.config import validate_config
 from app.routers import health, events
+from app.routers.graph import router as graph_router
 
 validate_config()
 
@@ -40,4 +41,5 @@ app.add_middleware(
 )
 
 app.include_router(health.router)
-app.include_router(events.router)
+app.include_router(graph_router)  # New MS Graph style API
+app.include_router(events.router)  # Legacy endpoints
