@@ -11,7 +11,7 @@ CLIENT_ID = os.getenv("CLIENT_ID")
 TENANT_ID = os.getenv("TENANT_ID")
 
 
-GRAPH_SCOPES = ["Calendars.Read"]
+GRAPH_SCOPES = ["Calendars.Read", "Mail.ReadWrite"]
 
 
 HOST = os.getenv("HOST", "0.0.0.0")
