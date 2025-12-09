@@ -339,3 +339,82 @@ class TestFormatAsTana:
         result = self.service.format_as_tana(events)
 
         assert "Untitled #meeting" in result
+
+
+class TestBuildAttendees:
+    """Tests for CalendarService._build_attendees method"""
+
+    def setup_method(self):
+        self.service = CalendarService()
+
+    def test_single_attendee_full_format(self):
+        """Test building single attendee with full format"""
+        attendees = [
+            {
+                "emailAddress": {"address": "john@example.com", "name": "John Doe"},
+                "type": "required",
+            }
+        ]
+
+        result = self.service._build_attendees(attendees)
+
+        assert len(result) == 1
+        assert result[0].email_address.address == "john@example.com"
+        assert result[0].email_address.name == "John Doe"
+        assert str(result[0].type) == "AttendeeType.Required"
+
+    def test_attendee_string_email(self):
+        """Test building attendee with string email address"""
+        attendees = [{"emailAddress": "john@example.com"}]
+
+        result = self.service._build_attendees(attendees)
+
+        assert len(result) == 1
+        assert result[0].email_address.address == "john@example.com"
+
+    def test_attendee_optional_type(self):
+        """Test building attendee with optional type"""
+        attendees = [
+            {"emailAddress": {"address": "john@example.com"}, "type": "optional"}
+        ]
+
+        result = self.service._build_attendees(attendees)
+
+        assert str(result[0].type) == "AttendeeType.Optional"
+
+    def test_attendee_resource_type(self):
+        """Test building attendee with resource type"""
+        attendees = [
+            {"emailAddress": {"address": "room@example.com"}, "type": "resource"}
+        ]
+
+        result = self.service._build_attendees(attendees)
+
+        assert str(result[0].type) == "AttendeeType.Resource"
+
+    def test_attendee_default_type(self):
+        """Test attendee defaults to required type"""
+        attendees = [{"emailAddress": {"address": "john@example.com"}}]
+
+        result = self.service._build_attendees(attendees)
+
+        assert str(result[0].type) == "AttendeeType.Required"
+
+    def test_multiple_attendees(self):
+        """Test building multiple attendees"""
+        attendees = [
+            {"emailAddress": {"address": "john@example.com"}, "type": "required"},
+            {"emailAddress": {"address": "jane@example.com"}, "type": "optional"},
+        ]
+
+        result = self.service._build_attendees(attendees)
+
+        assert len(result) == 2
+        assert result[0].email_address.address == "john@example.com"
+        assert result[1].email_address.address == "jane@example.com"
+
+    def test_empty_attendees(self):
+        """Test building empty attendees list"""
+        result = self.service._build_attendees([])
+
+        assert len(result) == 0

@@ -1,8 +1,9 @@
 """Calendar endpoints - MS Graph style API"""
 
-from typing import Optional
+from typing import Optional, List
 from fastapi import APIRouter, Query, Body, HTTPException
 from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel, Field
 
 from app.models.filters import Importance, Sensitivity, ShowAs, ResponseStatus
 from app.models.query_params import resolve_calendar_view_params
@@ -10,6 +11,136 @@ from app.services.calendar_service import calendar_service
 from app.services.template_service import template_service
 
 router = APIRouter(tags=["Calendar"])
+
+
+# --- Pydantic Models for Create Event ---
+
+
+class DateTimeTimeZoneModel(BaseModel):
+    """DateTime with timezone for event start/end"""
+
+    dateTime: str = Field(
+        ..., description="ISO 8601 datetime", examples=["2024-12-10T09:00:00"]
+    )
+    timeZone: Optional[str] = Field(
+        default=None,
+        description="Timezone name (defaults to system timezone)",
+        examples=["Europe/Berlin", "Pacific Standard Time"],
+    )
+
+
+class ItemBodyModel(BaseModel):
+    """Event body content"""
+
+    contentType: Optional[str] = Field(
+        default="HTML",
+        description="Content type: HTML or Text",
+        examples=["HTML", "Text"],
+    )
+    content: str = Field(..., description="Body content")
+
+
+class LocationModel(BaseModel):
+    """Event location"""
+
+    displayName: str = Field(
+        ...,
+        description="Location name",
+        examples=["Conference Room A", "Teams Meeting"],
+    )
+
+
+class EmailAddressModel(BaseModel):
+    """Email address with optional name"""
+
+    address: str = Field(
+        ..., description="Email address", examples=["user@example.com"]
+    )
+    name: Optional[str] = Field(default=None, description="Display name")
+
+
+class AttendeeModel(BaseModel):
+    """Event attendee"""
+
+    emailAddress: EmailAddressModel
+    type: Optional[str] = Field(
+        default="required",
+        description="Attendee type: required, optional, resource",
+        examples=["required", "optional"],
+    )
+
+
+class CreateEventRequest(BaseModel):
+    """Request body for creating a calendar event"""
+
+    subject: str = Field(
+        ..., description="Event subject/title", examples=["Team Standup"]
+    )
+    start: DateTimeTimeZoneModel = Field(..., description="Event start time")
+    end: DateTimeTimeZoneModel = Field(..., description="Event end time")
+    body: Optional[ItemBodyModel] = Field(
+        default=None, description="Event body/description"
+    )
+    location: Optional[LocationModel] = Field(
+        default=None, description="Event location"
+    )
+    attendees: Optional[List[AttendeeModel]] = Field(
+        default=None, description="List of attendees"
+    )
+    isOnlineMeeting: Optional[bool] = Field(
+        default=False, description="Create as Teams meeting"
+    )
+    isAllDay: Optional[bool] = Field(default=False, description="All-day event")
+    categories: Optional[List[str]] = Field(
+        default=None, description="Category names", examples=[["Work", "Important"]]
+    )
+    importance: Optional[str] = Field(
+        default=None,
+        description="Importance: low, normal, high",
+        examples=["normal", "high"],
+    )
+    sensitivity: Optional[str] = Field(
+        default=None,
+        description="Sensitivity: normal, personal, private, confidential",
+        examples=["normal", "private"],
+    )
+    showAs: Optional[str] = Field(
+        default=None,
+        description="Show as: free, tentative, busy, oof, workingElsewhere",
+        examples=["busy", "tentative"],
+    )
+    reminderMinutesBeforeStart: Optional[int] = Field(
+        default=None, ge=0, description="Reminder minutes before event"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "subject": "Team Standup",
+                    "start": {
+                        "dateTime": "2024-12-10T09:00:00",
+                        "timeZone": "Europe/Berlin",
+                    },
+                    "end": {
+                        "dateTime": "2024-12-10T09:30:00",
+                        "timeZone": "Europe/Berlin",
+                    },
+                    "attendees": [
+                        {
+                            "emailAddress": {
+                                "address": "colleague@company.com",
+                                "name": "Colleague",
+                            },
+                            "type": "required",
+                        }
+                    ],
+                    "isOnlineMeeting": True,
+                    "importance": "normal",
+                }
+            ]
+        }
+    }
 
 
 # MS Graph field names available for $select
@@ -348,3 +479,84 @@ async def post_calendar_view_with_template(
         raise HTTPException(
             status_code=500, detail=f"Failed to render template: {str(e)}"
         )
+
+
+@router.post(
+    "/events",
+    summary="Create calendar event",
+    description="""
+Create a new calendar event. Mirrors Microsoft Graph API `POST /me/events`.
+
+## Request Body
+Standard MS Graph event schema:
+- `subject` — Event title (required)
+- `start` — Start time with dateTime and timeZone (required)
+- `end` — End time with dateTime and timeZone (required)
+- `body` — Event description (optional)
+- `location` — Event location (optional)
+- `attendees` — List of attendees with email and type (optional)
+- `isOnlineMeeting` — Create as Teams meeting (optional)
+- `isAllDay` — All-day event (optional)
+- `categories` — Category names (optional)
+- `importance` — low, normal, high (optional)
+- `sensitivity` — normal, personal, private, confidential (optional)
+- `showAs` — free, tentative, busy, oof, workingElsewhere (optional)
+- `reminderMinutesBeforeStart` — Reminder time (optional)
+
+## Use Case
+Book a meeting after finding available times with `/me/findMeetingTimes`.
+
+## Example Request
+```json
+{
+  "subject": "Team Standup",
+  "start": {"dateTime": "2024-12-10T09:00:00", "timeZone": "Europe/Berlin"},
+  "end": {"dateTime": "2024-12-10T09:30:00", "timeZone": "Europe/Berlin"},
+  "attendees": [
+    {"emailAddress": {"address": "colleague@company.com"}, "type": "required"}
+  ],
+  "isOnlineMeeting": true
+}
+```
+""",
+)
+async def create_event(request: CreateEventRequest):
+    try:
+        # Build attendees list
+        attendees = None
+        if request.attendees:
+            attendees = [att.model_dump() for att in request.attendees]
+
+        # Build body
+        body = None
+        if request.body:
+            body = request.body.model_dump()
+
+        # Build location
+        location = None
+        if request.location:
+            location = request.location.model_dump()
+
+        event = await calendar_service.create_event(
+            subject=request.subject,
+            start=request.start.model_dump(),
+            end=request.end.model_dump(),
+            body=body,
+            location=location,
+            attendees=attendees,
+            is_online_meeting=request.isOnlineMeeting or False,
+            is_all_day=request.isAllDay or False,
+            categories=request.categories,
+            importance=request.importance,
+            sensitivity=request.sensitivity,
+            show_as=request.showAs,
+            reminder_minutes_before_start=request.reminderMinutesBeforeStart,
+        )
+
+        return {
+            "value": event,
+            "@odata.context": "$metadata#users('me')/events/$entity",
+        }
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to create event: {str(e)}")

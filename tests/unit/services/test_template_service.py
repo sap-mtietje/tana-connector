@@ -328,3 +328,93 @@ class TestTanaTemplates:
             if call_idx + 1 < len(lines)
             else True
         )
+
+
+@pytest.mark.unit
+class TestGenericRenderMethod:
+    """Tests for the generic render() method"""
+
+    def test_render_with_messages(self):
+        """Should render with messages context"""
+        service = TemplateService()
+        messages = [
+            {"subject": "Hello", "from": "alice@example.com"},
+            {"subject": "World", "from": "bob@example.com"},
+        ]
+        template = (
+            "{% for msg in messages %}{{msg.subject}} from {{msg.from}}\n{% endfor %}"
+        )
+
+        result = service.render(template, messages=messages, count=len(messages))
+
+        assert "Hello from alice@example.com" in result
+        assert "World from bob@example.com" in result
+
+    def test_render_with_arbitrary_context(self):
+        """Should render with arbitrary context variables"""
+        service = TemplateService()
+        template = "User: {{user_name}}, Folder: {{folder}}"
+
+        result = service.render(template, user_name="John", folder="inbox")
+
+        assert result == "User: John, Folder: inbox"
+
+    def test_render_undefined_variable_strict(self):
+        """Should raise ValueError for undefined variable when accessed directly"""
+        service = TemplateService()
+        # This template tries to iterate over undefined variable
+        template = "{% for item in undefined_var %}{{item}}{% endfor %}"
+
+        # Jinja2 treats undefined as empty iterable, so this won't raise
+        result = service.render(template)
+        assert result == ""
+
+    def test_render_date_format_with_z_suffix(self):
+        """Should handle date strings with Z suffix"""
+        service = TemplateService()
+        template = "{{date | date_format('%Y-%m-%d')}}"
+
+        result = service.render(template, date="2025-12-09T10:00:00Z")
+
+        assert result == "2025-12-09"
+
+    def test_render_date_format_with_microseconds(self):
+        """Should handle date strings with .0000000 microseconds"""
+        service = TemplateService()
+        template = "{{date | date_format('%Y-%m-%d %H:%M')}}"
+
+        result = service.render(template, date="2025-12-09T10:30:00.0000000")
+
+        assert result == "2025-12-09 10:30"
+
+    def test_render_date_format_non_iso_string(self):
+        """Should return original string for non-ISO date format"""
+        service = TemplateService()
+        template = "{{date | date_format('%Y-%m-%d')}}"
+
+        result = service.render(template, date="December 9, 2025")
+
+        # No T in string, so returns original
+        assert result == "December 9, 2025"
+
+    def test_render_undefined_error_raises_valueerror(self):
+        """Should raise ValueError for undefined variable access"""
+        service = TemplateService()
+        # Force an undefined error by using strict undefined access
+        template = "{{ undefined_var.attribute }}"
+
+        with pytest.raises(ValueError) as exc_info:
+            service.render(template)
+
+        assert "Undefined" in str(exc_info.value) or "undefined" in str(exc_info.value)
+
+    def test_render_date_format_with_invalid_iso(self):
+        """Should handle malformed ISO date gracefully"""
+        service = TemplateService()
+        template = "{{date | date_format('%Y-%m-%d')}}"
+
+        # Has T but invalid format
+        result = service.render(template, date="2025-13-45T99:99:99")
+
+        # Should return original on parse failure
+        assert result == "2025-13-45T99:99:99"

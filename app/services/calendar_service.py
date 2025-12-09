@@ -1,9 +1,18 @@
 """Calendar service - MS Graph style responses via Kiota SDK"""
 
 from typing import Optional, List, Dict, Any
+
 from msgraph.generated.users.item.calendar_view.calendar_view_request_builder import (
     CalendarViewRequestBuilder,
 )
+from msgraph.generated.models.event import Event
+from msgraph.generated.models.item_body import ItemBody
+from msgraph.generated.models.body_type import BodyType
+from msgraph.generated.models.date_time_time_zone import DateTimeTimeZone
+from msgraph.generated.models.location import Location
+from msgraph.generated.models.attendee import Attendee
+from msgraph.generated.models.attendee_type import AttendeeType
+from msgraph.generated.models.email_address import EmailAddress
 
 from app.services.graph_service import graph_service
 from app.utils.timezone_utils import get_system_timezone_name
@@ -236,6 +245,167 @@ class CalendarService:
                 lines.append(f"  - Categories:: {', '.join(categories)}")
 
         return "\n".join(lines)
+
+    async def create_event(
+        self,
+        subject: str,
+        start: Dict[str, str],
+        end: Dict[str, str],
+        body: Optional[Dict[str, str]] = None,
+        location: Optional[Dict[str, str]] = None,
+        attendees: Optional[List[Dict[str, Any]]] = None,
+        is_online_meeting: bool = False,
+        is_all_day: bool = False,
+        categories: Optional[List[str]] = None,
+        importance: Optional[str] = None,
+        sensitivity: Optional[str] = None,
+        show_as: Optional[str] = None,
+        reminder_minutes_before_start: Optional[int] = None,
+    ) -> Dict[str, Any]:
+        """
+        Create a new calendar event.
+
+        Args:
+            subject: Event subject/title
+            start: Start time {"dateTime": "2024-12-10T09:00:00", "timeZone": "Europe/Berlin"}
+            end: End time {"dateTime": "2024-12-10T10:00:00", "timeZone": "Europe/Berlin"}
+            body: Optional body {"contentType": "HTML"|"Text", "content": "..."}
+            location: Optional location {"displayName": "Conference Room A"}
+            attendees: Optional list of attendees
+                       [{"emailAddress": {"address": "...", "name": "..."}, "type": "required"}]
+            is_online_meeting: Create as Teams meeting
+            is_all_day: All-day event
+            categories: List of category names
+            importance: "low", "normal", "high"
+            sensitivity: "normal", "personal", "private", "confidential"
+            show_as: "free", "tentative", "busy", "oof", "workingElsewhere"
+            reminder_minutes_before_start: Minutes before event to show reminder
+
+        Returns:
+            Created event in MS Graph JSON format
+        """
+        client = await graph_service.get_client()
+        timezone_name = get_system_timezone_name()
+
+        # Build event object
+        event = Event()
+        event.subject = subject
+
+        # Start time
+        event.start = DateTimeTimeZone()
+        event.start.date_time = start.get("dateTime")
+        event.start.time_zone = start.get("timeZone", timezone_name)
+
+        # End time
+        event.end = DateTimeTimeZone()
+        event.end.date_time = end.get("dateTime")
+        event.end.time_zone = end.get("timeZone", timezone_name)
+
+        # Body
+        if body:
+            event.body = ItemBody()
+            event.body.content = body.get("content", "")
+            content_type = body.get("contentType", "HTML").upper()
+            event.body.content_type = (
+                BodyType.Html if content_type == "HTML" else BodyType.Text
+            )
+
+        # Location
+        if location:
+            event.location = Location()
+            event.location.display_name = location.get("displayName")
+
+        # Attendees
+        if attendees:
+            event.attendees = self._build_attendees(attendees)
+
+        # Online meeting
+        event.is_online_meeting = is_online_meeting
+
+        # All-day event
+        event.is_all_day = is_all_day
+
+        # Categories
+        if categories:
+            event.categories = categories
+
+        # Importance
+        if importance:
+            from msgraph.generated.models.importance import Importance
+
+            importance_map = {
+                "low": Importance.Low,
+                "normal": Importance.Normal,
+                "high": Importance.High,
+            }
+            event.importance = importance_map.get(importance.lower(), Importance.Normal)
+
+        # Sensitivity
+        if sensitivity:
+            from msgraph.generated.models.sensitivity import Sensitivity
+
+            sensitivity_map = {
+                "normal": Sensitivity.Normal,
+                "personal": Sensitivity.Personal,
+                "private": Sensitivity.Private,
+                "confidential": Sensitivity.Confidential,
+            }
+            event.sensitivity = sensitivity_map.get(
+                sensitivity.lower(), Sensitivity.Normal
+            )
+
+        # Show as
+        if show_as:
+            from msgraph.generated.models.free_busy_status import FreeBusyStatus
+
+            show_as_map = {
+                "free": FreeBusyStatus.Free,
+                "tentative": FreeBusyStatus.Tentative,
+                "busy": FreeBusyStatus.Busy,
+                "oof": FreeBusyStatus.Oof,
+                "workingelsewhere": FreeBusyStatus.WorkingElsewhere,
+            }
+            event.show_as = show_as_map.get(show_as.lower(), FreeBusyStatus.Busy)
+
+        # Reminder
+        if reminder_minutes_before_start is not None:
+            event.is_reminder_on = True
+            event.reminder_minutes_before_start = reminder_minutes_before_start
+
+        # Create the event
+        result = await client.me.events.post(event)
+
+        return self._event_to_dict(result)
+
+    def _build_attendees(self, attendees: List[Dict[str, Any]]) -> List[Attendee]:
+        """Convert attendee dicts to Kiota Attendee objects."""
+        result = []
+        for att_data in attendees:
+            attendee = Attendee()
+
+            # Email address
+            email_data = att_data.get("emailAddress", {})
+            if isinstance(email_data, str):
+                email_address = EmailAddress()
+                email_address.address = email_data
+                attendee.email_address = email_address
+            else:
+                email_address = EmailAddress()
+                email_address.address = email_data.get("address")
+                email_address.name = email_data.get("name")
+                attendee.email_address = email_address
+
+            # Attendee type
+            att_type = att_data.get("type", "required").lower()
+            type_map = {
+                "required": AttendeeType.Required,
+                "optional": AttendeeType.Optional,
+                "resource": AttendeeType.Resource,
+            }
+            attendee.type = type_map.get(att_type, AttendeeType.Required)
+
+            result.append(attendee)
+        return result
 
 
 calendar_service = CalendarService()

@@ -1,9 +1,14 @@
 """Unit tests for timezone utilities"""
 
 from unittest.mock import patch, MagicMock
-from datetime import datetime
+from datetime import datetime, timezone
 
-from app.utils.timezone_utils import get_system_timezone_name, format_datetime_for_graph
+from app.utils.timezone_utils import (
+    get_system_timezone_name,
+    format_datetime_for_graph,
+    convert_to_local_timezone,
+    format_datetime_local,
+)
 
 
 class TestGetSystemTimezoneName:
@@ -136,3 +141,51 @@ class TestFormatDatetimeForGraph:
         dt = datetime(2025, 10, 5, 23, 59, 59)
         result = format_datetime_for_graph(dt)
         assert result == "2025-10-05T23:59:59"
+
+
+class TestConvertToLocalTimezone:
+    """Tests for convert_to_local_timezone function"""
+
+    def test_none_returns_none(self):
+        """Test None input returns None"""
+        result = convert_to_local_timezone(None)
+        assert result is None
+
+    def test_naive_datetime_assumed_utc(self):
+        """Test naive datetime is assumed to be UTC"""
+        dt = datetime(2025, 12, 9, 12, 0, 0)
+        result = convert_to_local_timezone(dt)
+        # Result should be timezone-aware
+        assert result.tzinfo is not None
+
+    def test_aware_datetime_converted(self):
+        """Test timezone-aware datetime is converted"""
+        dt = datetime(2025, 12, 9, 12, 0, 0, tzinfo=timezone.utc)
+        result = convert_to_local_timezone(dt)
+        # Result should be timezone-aware
+        assert result.tzinfo is not None
+
+
+class TestFormatDatetimeLocal:
+    """Tests for format_datetime_local function"""
+
+    def test_none_returns_none(self):
+        """Test None input returns None"""
+        result = format_datetime_local(None)
+        assert result is None
+
+    def test_formats_utc_datetime(self):
+        """Test formatting UTC datetime"""
+        dt = datetime(2025, 12, 9, 12, 0, 0, tzinfo=timezone.utc)
+        result = format_datetime_local(dt)
+        # Should be ISO format string
+        assert isinstance(result, str)
+        assert "2025-12-09" in result
+
+    def test_formats_naive_datetime(self):
+        """Test formatting naive datetime"""
+        dt = datetime(2025, 12, 9, 12, 0, 0)
+        result = format_datetime_local(dt)
+        # Should be ISO format string
+        assert isinstance(result, str)
+        assert "2025-12-09" in result
