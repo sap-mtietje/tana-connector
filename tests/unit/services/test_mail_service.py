@@ -2,7 +2,9 @@
 
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
-from app.services.mail_service import MailService
+
+
+from app.services.mail_service import MailService, WELL_KNOWN_FOLDERS
 
 
 class TestBuildRecipients:
@@ -210,4 +212,185 @@ class TestMessageToDict:
         message.importance = None
         message.created_date_time = None
         message.last_modified_date_time = None
+        message.received_date_time = None
+        message.sent_date_time = None
+        message.has_attachments = None
+        message.conversation_id = None
         return message
+
+
+class TestResolveFolderId:
+    """Tests for MailService._resolve_folder_id method"""
+
+    def setup_method(self):
+        self.service = MailService()
+
+    def test_well_known_folder_inbox(self):
+        """Test inbox folder resolution"""
+        assert self.service._resolve_folder_id("inbox") == "inbox"
+        assert self.service._resolve_folder_id("INBOX") == "inbox"
+        assert self.service._resolve_folder_id("Inbox") == "inbox"
+
+    def test_well_known_folder_sent(self):
+        """Test sent folder resolution"""
+        assert self.service._resolve_folder_id("sent") == "sentitems"
+        assert self.service._resolve_folder_id("sentitems") == "sentitems"
+
+    def test_well_known_folder_deleted(self):
+        """Test deleted folder resolution"""
+        assert self.service._resolve_folder_id("deleted") == "deleteditems"
+        assert self.service._resolve_folder_id("deleteditems") == "deleteditems"
+
+    def test_well_known_folder_junk(self):
+        """Test junk folder resolution"""
+        assert self.service._resolve_folder_id("junk") == "junkemail"
+        assert self.service._resolve_folder_id("junkemail") == "junkemail"
+
+    def test_custom_folder_id_passthrough(self):
+        """Test custom folder IDs are passed through unchanged"""
+        custom_id = "AAMkAGI2TG93AAA="
+        assert self.service._resolve_folder_id(custom_id) == custom_id
+
+
+class TestFormatAsTana:
+    """Tests for MailService.format_as_tana method"""
+
+    def setup_method(self):
+        self.service = MailService()
+
+    def test_empty_messages(self):
+        """Test formatting empty message list"""
+        result = self.service.format_as_tana([])
+        assert result == "%%tana%%\n- No messages found"
+
+    def test_single_message(self):
+        """Test formatting single message"""
+        messages = [
+            {
+                "subject": "Test Email",
+                "from": {
+                    "emailAddress": {
+                        "name": "John Doe",
+                        "address": "john@example.com",
+                    }
+                },
+                "receivedDateTime": "2025-12-05T10:00:00Z",
+                "bodyPreview": "This is a test email preview.",
+                "webLink": "https://outlook.com/mail/123",
+            }
+        ]
+
+        result = self.service.format_as_tana(messages)
+
+        assert "%%tana%%" in result
+        assert "- Test Email #email" in result
+        assert "From:: John Doe" in result
+        assert "Received:: [[date:2025-12-05T10:00:00Z]]" in result
+        assert "Preview:: This is a test email preview." in result
+        assert "Link:: https://outlook.com/mail/123" in result
+
+    def test_message_without_subject(self):
+        """Test formatting message without subject"""
+        messages = [{"from": {"emailAddress": {"name": "Sender"}}}]
+
+        result = self.service.format_as_tana(messages)
+
+        assert "- (No subject) #email" in result
+
+    def test_message_with_address_only(self):
+        """Test formatting message with email address but no name"""
+        messages = [
+            {
+                "subject": "Test",
+                "from": {
+                    "emailAddress": {
+                        "name": None,
+                        "address": "sender@example.com",
+                    }
+                },
+            }
+        ]
+
+        result = self.service.format_as_tana(messages)
+
+        assert "From:: sender@example.com" in result
+
+    def test_deleted_messages_skipped(self):
+        """Test that deleted messages are skipped in Tana output"""
+        messages = [
+            {"subject": "Normal Email"},
+            {"subject": "Deleted Email", "@removed": {"reason": "deleted"}},
+        ]
+
+        result = self.service.format_as_tana(messages)
+
+        assert "Normal Email" in result
+        assert "Deleted Email" not in result
+
+    def test_custom_tag(self):
+        """Test custom tag parameter"""
+        messages = [{"subject": "Test"}]
+
+        result = self.service.format_as_tana(messages, tag="inbox")
+
+        assert "- Test #inbox" in result
+
+    def test_long_preview_truncated(self):
+        """Test that long body previews are truncated"""
+        long_preview = "A" * 300
+        messages = [{"subject": "Test", "bodyPreview": long_preview}]
+
+        result = self.service.format_as_tana(messages)
+
+        # Should be truncated to 200 chars + "..."
+        assert "A" * 200 in result
+        assert "..." in result
+
+    def test_preview_newlines_removed(self):
+        """Test that newlines in preview are replaced"""
+        messages = [{"subject": "Test", "bodyPreview": "Line1\nLine2\rLine3"}]
+
+        result = self.service.format_as_tana(messages)
+
+        # \n becomes space, \r is removed
+        assert "Line1 Line2Line3" in result
+        # No raw newlines in the preview line itself
+        preview_line = [line for line in result.split("\n") if "Preview::" in line][0]
+        assert "\r" not in preview_line
+
+
+class TestWellKnownFolders:
+    """Tests for WELL_KNOWN_FOLDERS constant"""
+
+    def test_all_folders_defined(self):
+        """Test all expected folders are defined"""
+        expected = [
+            "inbox",
+            "drafts",
+            "sent",
+            "sentitems",
+            "deleted",
+            "deleteditems",
+            "junk",
+            "junkemail",
+            "archive",
+            "outbox",
+        ]
+
+        for folder in expected:
+            assert folder in WELL_KNOWN_FOLDERS
+
+    def test_folder_values_are_valid(self):
+        """Test all folder values are valid MS Graph folder IDs"""
+        valid_ids = {
+            "inbox",
+            "drafts",
+            "sentitems",
+            "deleteditems",
+            "junkemail",
+            "archive",
+            "outbox",
+        }
+
+        for value in WELL_KNOWN_FOLDERS.values():
+            assert value in valid_ids

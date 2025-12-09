@@ -216,6 +216,9 @@ __marimo__/
 .streamlit/secrets.toml
 auth_record.json
 auth_records/auth_record.json
+
+# Delta token cache (contains sync state, not secrets)
+cache/delta_tokens/
 docs/graph_api_examples/
 .cursor/
 docs/DEVELOPMENT.md

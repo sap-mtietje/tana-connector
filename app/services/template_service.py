@@ -6,7 +6,7 @@ from app.utils.description_utils import process_description
 
 
 class TemplateService:
-    """Handles Jinja2 template rendering for events data"""
+    """Handles Jinja2 template rendering for MS Graph data (events, messages, etc.)"""
 
     def __init__(self):
         """Initialize Jinja2 environment with custom filters"""
@@ -28,7 +28,7 @@ class TemplateService:
         end_date: str,
     ) -> str:
         """
-        Render a Jinja2 template with events data
+        Render a Jinja2 template with events data (legacy method for calendar).
 
         Args:
             template_string: Jinja2 template as string
@@ -44,16 +44,45 @@ class TemplateService:
             UndefinedError: If template references undefined variables
             ValueError: If template rendering fails
         """
+        return self.render(
+            template_string=template_string,
+            events=events,
+            count=len(events),
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+    def render(self, template_string: str, **context) -> str:
+        """
+        Render a Jinja2 template with arbitrary context.
+
+        This is the generic method that supports any data type.
+        Use this for mail messages, or any other MS Graph data.
+
+        Args:
+            template_string: Jinja2 template as string
+            **context: Arbitrary keyword arguments passed to template
+                       Common patterns:
+                       - messages=[], count=N for mail
+                       - events=[], count=N, start_date, end_date for calendar
+
+        Returns:
+            Rendered template as string
+
+        Raises:
+            ValueError: If template has syntax errors or rendering fails
+
+        Example:
+            # For mail messages
+            template_service.render(
+                template_string=template,
+                messages=messages,
+                count=len(messages),
+                folder="inbox",
+            )
+        """
         try:
             template = self.env.from_string(template_string)
-
-            context = {
-                "events": events,
-                "count": len(events),
-                "start_date": start_date,
-                "end_date": end_date,
-            }
-
             rendered = template.render(**context)
             return rendered
 

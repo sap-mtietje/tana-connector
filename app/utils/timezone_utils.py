@@ -1,6 +1,6 @@
 """Timezone detection and conversion utilities"""
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 
 def get_system_timezone_name() -> str:
@@ -63,3 +63,42 @@ def get_system_timezone_name() -> str:
 def format_datetime_for_graph(dt: datetime) -> str:
     """Format datetime for Graph API query parameters"""
     return dt.strftime("%Y-%m-%dT%H:%M:%S")
+
+
+def convert_to_local_timezone(dt: datetime) -> datetime:
+    """
+    Convert a datetime to the local system timezone.
+
+    If the datetime is naive (no tzinfo), assumes it's UTC.
+    Returns a timezone-aware datetime in the local timezone.
+    """
+    if dt is None:
+        return None
+
+    # If naive, assume UTC
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+
+    # Get local timezone offset (rounded to nearest minute to avoid float precision issues)
+    local_now = datetime.now()
+    utc_now = datetime.now(timezone.utc).replace(tzinfo=None)
+    offset_seconds = round((local_now - utc_now).total_seconds() / 60) * 60
+
+    # Create a timezone with that offset
+    local_tz = timezone(timedelta(seconds=offset_seconds))
+
+    # Convert to local timezone
+    return dt.astimezone(local_tz)
+
+
+def format_datetime_local(dt: datetime) -> str:
+    """
+    Convert datetime to local timezone and format as ISO string.
+
+    Returns ISO format string with the local timezone offset.
+    """
+    if dt is None:
+        return None
+
+    local_dt = convert_to_local_timezone(dt)
+    return local_dt.isoformat()

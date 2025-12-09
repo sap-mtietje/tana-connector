@@ -167,9 +167,9 @@ class TestCustomFilters:
 
         result = service.render_template(template, events, "2025-10-09", "2025-10-10")
 
-        # Should remove HTML and meeting links
+        # Should remove HTML but preserve meeting links
         assert "<p>" not in result
-        assert "https://teams.microsoft.com" not in result
+        assert "https://teams.microsoft.com" in result
         assert "This is a meeting" in result
 
     def test_clean_filter_with_empty_string(self):
