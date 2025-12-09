@@ -41,6 +41,7 @@ def process_description(
 
     Clean mode:
     - Strips all HTML tags using BeautifulSoup
+    - Removes # characters to prevent accidental Tana supertag creation
     - Performs whitespace cleanup
     - Truncation is applied at a word boundary
     """
@@ -55,6 +56,9 @@ def process_description(
 
         # Step 2: Whitespace cleanup
         result = result.replace("\r\n", "\n").replace("\r", "\n")
+
+        # Step 3: Add space after # to prevent Tana supertag creation
+        result = result.replace("#", "# ")
 
         # Collapse multiple spaces/newlines
         result = re.sub(r"[ \t]+", " ", result)

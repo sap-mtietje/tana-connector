@@ -123,3 +123,27 @@ class TestProcessDescription:
         result = process_description(text, mode="clean")
         # Should have at most 2 consecutive newlines
         assert "\n\n\n" not in result
+
+    def test_clean_mode_escapes_hash_symbols(self):
+        """Test clean mode adds space after # to prevent Tana supertag creation"""
+        text = "Check out #todo and #important items"
+        result = process_description(text, mode="clean")
+        assert "#todo" not in result
+        assert "#important" not in result
+        assert "# todo" in result
+        assert "# important" in result
+
+    def test_clean_mode_escapes_hash_from_html(self):
+        """Test clean mode escapes # from HTML content"""
+        html = "<p>Task: #todo complete the #project</p>"
+        result = process_description(html, mode="clean")
+        assert "#todo" not in result
+        assert "#project" not in result
+        assert "# todo" in result
+        assert "# project" in result
+
+    def test_full_mode_preserves_hash_symbols(self):
+        """Test full mode preserves # symbols"""
+        text = "Check #todo"
+        result = process_description(text, mode="full")
+        assert "#todo" in result
