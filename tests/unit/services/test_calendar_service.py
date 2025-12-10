@@ -73,9 +73,10 @@ class TestEventToDict:
 
         result = self.service._event_to_dict(event)
 
-        assert result["start"]["dateTime"] == "2025-10-05T10:00:00"
+        # DateTime now includes timezone offset (ISO format)
+        assert result["start"]["dateTime"].startswith("2025-10-05T10:00:00")
         assert result["start"]["timeZone"] == "Europe/Berlin"
-        assert result["end"]["dateTime"] == "2025-10-05T11:00:00"
+        assert result["end"]["dateTime"].startswith("2025-10-05T11:00:00")
 
     def test_location_conversion(self):
         """Test location field conversion"""

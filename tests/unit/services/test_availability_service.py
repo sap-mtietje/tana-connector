@@ -352,9 +352,10 @@ class TestResultToDict:
         output = self.service._result_to_dict(result)
 
         slot = output["meetingTimeSuggestions"][0]["meetingTimeSlot"]
-        assert slot["start"]["dateTime"] == "2024-12-10T09:00:00"
+        # DateTime now includes timezone offset (ISO format)
+        assert slot["start"]["dateTime"].startswith("2024-12-10T09:00:00")
         assert slot["start"]["timeZone"] == "Europe/Berlin"
-        assert slot["end"]["dateTime"] == "2024-12-10T10:00:00"
+        assert slot["end"]["dateTime"].startswith("2024-12-10T10:00:00")
 
     def test_suggestion_with_attendee_availability(self):
         """Test converting suggestion with attendee availability"""

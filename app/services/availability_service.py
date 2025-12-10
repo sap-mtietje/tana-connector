@@ -18,6 +18,7 @@ from msgraph.generated.models.location_constraint_item import LocationConstraint
 
 from app.services.graph_service import graph_service
 from app.utils.timezone_utils import get_system_timezone_name
+from datetime import datetime, timezone
 
 
 class AvailabilityService:
@@ -238,7 +239,9 @@ class AvailabilityService:
                 if suggestion.meeting_time_slot:
                     sugg_dict["meetingTimeSlot"] = {
                         "start": {
-                            "dateTime": suggestion.meeting_time_slot.start.date_time
+                            "dateTime": self._format_graph_datetime(
+                                suggestion.meeting_time_slot.start.date_time
+                            )
                             if suggestion.meeting_time_slot.start
                             else None,
                             "timeZone": suggestion.meeting_time_slot.start.time_zone
@@ -246,7 +249,9 @@ class AvailabilityService:
                             else None,
                         },
                         "end": {
-                            "dateTime": suggestion.meeting_time_slot.end.date_time
+                            "dateTime": self._format_graph_datetime(
+                                suggestion.meeting_time_slot.end.date_time
+                            )
                             if suggestion.meeting_time_slot.end
                             else None,
                             "timeZone": suggestion.meeting_time_slot.end.time_zone
@@ -292,6 +297,33 @@ class AvailabilityService:
             "emptySuggestionsReason": result.empty_suggestions_reason or "",
             "@odata.context": "$metadata#microsoft.graph.meetingTimeSuggestionsResult",
         }
+
+    def _format_graph_datetime(self, datetime_str: str) -> str:
+        """
+        Convert MS Graph datetime string to ISO format with timezone offset.
+
+        MS Graph returns: "2025-12-10T10:00:00.0000000"
+        We convert to: "2025-12-10T10:00:00+01:00"
+        """
+        if not datetime_str:
+            return None
+
+        # Parse the datetime string (remove fractional seconds if present)
+        dt_str = datetime_str.split(".")[0]
+        try:
+            dt = datetime.fromisoformat(dt_str)
+        except ValueError:
+            return datetime_str  # Return as-is if parsing fails
+
+        # The datetime from Graph is already in local timezone (due to Prefer header)
+        # Add the local timezone offset
+        local_now = datetime.now()
+        utc_now = datetime.now(timezone.utc).replace(tzinfo=None)
+        offset_seconds = round((local_now - utc_now).total_seconds() / 60) * 60
+        local_tz = timezone(timedelta(seconds=offset_seconds))
+
+        dt = dt.replace(tzinfo=local_tz)
+        return dt.isoformat()
 
     def format_as_tana(
         self,

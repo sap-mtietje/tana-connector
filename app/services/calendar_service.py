@@ -84,15 +84,15 @@ class CalendarService:
                 "content": event.body.content,
             }
 
-        # Start/End times
+        # Start/End times (convert to ISO format with offset)
         if event.start:
             result["start"] = {
-                "dateTime": event.start.date_time,
+                "dateTime": self._format_graph_datetime(event.start.date_time),
                 "timeZone": event.start.time_zone,
             }
         if event.end:
             result["end"] = {
-                "dateTime": event.end.date_time,
+                "dateTime": self._format_graph_datetime(event.end.date_time),
                 "timeZone": event.end.time_zone,
             }
 
@@ -201,6 +201,35 @@ class CalendarService:
             }
 
         return result
+
+    def _format_graph_datetime(self, datetime_str: str) -> str:
+        """
+        Convert MS Graph datetime string to ISO format with timezone offset.
+
+        MS Graph returns: "2025-12-10T10:00:00.0000000"
+        We convert to: "2025-12-10T10:00:00+01:00"
+        """
+        if not datetime_str:
+            return None
+
+        from datetime import datetime, timezone, timedelta
+
+        # Parse the datetime string (remove fractional seconds if present)
+        dt_str = datetime_str.split(".")[0]
+        try:
+            dt = datetime.fromisoformat(dt_str)
+        except ValueError:
+            return datetime_str  # Return as-is if parsing fails
+
+        # The datetime from Graph is already in local timezone (due to Prefer header)
+        # Add the local timezone offset
+        local_now = datetime.now()
+        utc_now = datetime.now(timezone.utc).replace(tzinfo=None)
+        offset_seconds = round((local_now - utc_now).total_seconds() / 60) * 60
+        local_tz = timezone(timedelta(seconds=offset_seconds))
+
+        dt = dt.replace(tzinfo=local_tz)
+        return dt.isoformat()
 
     def format_as_tana(self, events: List[Dict[str, Any]], tag: str = "meeting") -> str:
         """
