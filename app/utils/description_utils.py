@@ -54,19 +54,14 @@ def process_description(
         # Step 1: Strip HTML using BeautifulSoup
         result = strip_html(result)
 
-        # Step 2: Whitespace cleanup
-        result = result.replace("\r\n", "\n").replace("\r", "\n")
+        # Step 2: Replace newlines with spaces (critical for Tana Paste single-line fields)
+        result = result.replace("\r\n", " ").replace("\r", " ").replace("\n", " ")
 
         # Step 3: Add space after # to prevent Tana supertag creation
         result = result.replace("#", "# ")
 
-        # Collapse multiple spaces/newlines
-        result = re.sub(r"[ \t]+", " ", result)
-        result = re.sub(r"\n\s*\n\s*\n+", "\n\n", result)
-
-        # Clean up lines
-        lines = [line.strip() for line in result.split("\n")]
-        result = "\n".join(line for line in lines if line)
+        # Collapse multiple spaces
+        result = re.sub(r" +", " ", result)
 
     # Truncate if needed
     if max_length and len(result) > max_length:
