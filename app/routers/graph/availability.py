@@ -1,10 +1,16 @@
-"""Availability endpoints - Find meeting times via MS Graph API"""
+"""Availability endpoints - Find meeting times via MS Graph API."""
 
 from typing import Optional, List
+
 from fastapi import APIRouter, Query, Body, HTTPException
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
+from app.models import (
+    AttendeeModel,
+    TimeConstraintModel,
+    LocationConstraintModel,
+)
 from app.services.availability_service import availability_service
 from app.services.template_service import template_service
 from app.utils.date_utils import parse_date_keyword_to_range
@@ -13,84 +19,6 @@ router = APIRouter(tags=["Availability"])
 
 
 # --- Pydantic Models for Request/Response ---
-
-
-class EmailAddressModel(BaseModel):
-    """Email address with optional name"""
-
-    address: str = Field(
-        ..., description="Email address", examples=["user@example.com"]
-    )
-    name: Optional[str] = Field(
-        default=None, description="Display name", examples=["John Doe"]
-    )
-
-
-class AttendeeModel(BaseModel):
-    """Attendee for meeting time search"""
-
-    emailAddress: EmailAddressModel
-    type: Optional[str] = Field(
-        default="required",
-        description="Attendee type: required, optional, resource",
-        examples=["required", "optional"],
-    )
-
-
-class DateTimeTimeZoneModel(BaseModel):
-    """DateTime with timezone"""
-
-    dateTime: str = Field(
-        ..., description="ISO 8601 datetime", examples=["2024-12-10T09:00:00"]
-    )
-    timeZone: Optional[str] = Field(
-        default=None,
-        description="Timezone name (defaults to system timezone)",
-        examples=["Europe/Berlin", "Pacific Standard Time"],
-    )
-
-
-class TimeSlotModel(BaseModel):
-    """Time slot for availability search"""
-
-    start: DateTimeTimeZoneModel
-    end: DateTimeTimeZoneModel
-
-
-class TimeConstraintModel(BaseModel):
-    """Time constraint for meeting search"""
-
-    activityDomain: Optional[str] = Field(
-        default="work",
-        description="Activity domain: work, personal, unrestricted",
-        examples=["work"],
-    )
-    timeSlots: List[TimeSlotModel] = Field(
-        ..., description="List of time slots to search within"
-    )
-
-
-class LocationModel(BaseModel):
-    """Location for meeting"""
-
-    displayName: str = Field(..., description="Location name", examples=["Conf Room A"])
-    resolveAvailability: Optional[bool] = Field(
-        default=False, description="Check room availability"
-    )
-
-
-class LocationConstraintModel(BaseModel):
-    """Location constraint for meeting search"""
-
-    isRequired: Optional[bool] = Field(
-        default=False, description="Whether location is required"
-    )
-    suggestLocation: Optional[bool] = Field(
-        default=False, description="Whether to suggest locations"
-    )
-    locations: Optional[List[LocationModel]] = Field(
-        default=None, description="Preferred locations"
-    )
 
 
 class FindMeetingTimesRequest(BaseModel):

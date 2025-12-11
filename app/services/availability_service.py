@@ -1,4 +1,4 @@
-"""Availability service - Find meeting times via MS Graph Kiota SDK"""
+"""Availability service - Find meeting times via MS Graph Kiota SDK."""
 
 from typing import Optional, List, Dict, Any
 from datetime import timedelta
@@ -7,8 +7,6 @@ from msgraph.generated.users.item.find_meeting_times.find_meeting_times_post_req
     FindMeetingTimesPostRequestBody,
 )
 from msgraph.generated.models.attendee_base import AttendeeBase
-from msgraph.generated.models.attendee_type import AttendeeType
-from msgraph.generated.models.email_address import EmailAddress
 from msgraph.generated.models.time_constraint import TimeConstraint
 from msgraph.generated.models.time_slot import TimeSlot
 from msgraph.generated.models.date_time_time_zone import DateTimeTimeZone
@@ -17,8 +15,8 @@ from msgraph.generated.models.location_constraint import LocationConstraint
 from msgraph.generated.models.location_constraint_item import LocationConstraintItem
 
 from app.services.graph_service import graph_service
-from app.utils.timezone_utils import get_system_timezone_name
-from datetime import datetime, timezone
+from app.utils.timezone_utils import get_system_timezone_name, format_graph_datetime
+from app.utils.attendee_utils import build_attendees
 
 
 class AvailabilityService:
@@ -103,35 +101,7 @@ class AvailabilityService:
 
     def _build_attendees(self, attendees: List[Dict[str, Any]]) -> List[AttendeeBase]:
         """Convert attendee dicts to Kiota AttendeeBase objects."""
-        result = []
-        for att in attendees:
-            attendee = AttendeeBase()
-
-            # Email address
-            email_data = att.get("emailAddress", {})
-            if isinstance(email_data, str):
-                # Simple string format: just the email address
-                email_address = EmailAddress()
-                email_address.address = email_data
-                attendee.email_address = email_address
-            else:
-                # Full object format
-                email_address = EmailAddress()
-                email_address.address = email_data.get("address")
-                email_address.name = email_data.get("name")
-                attendee.email_address = email_address
-
-            # Attendee type
-            att_type = att.get("type", "required").lower()
-            type_map = {
-                "required": AttendeeType.Required,
-                "optional": AttendeeType.Optional,
-                "resource": AttendeeType.Resource,
-            }
-            attendee.type = type_map.get(att_type, AttendeeType.Required)
-
-            result.append(attendee)
-        return result
+        return build_attendees(attendees, AttendeeBase)
 
     def _build_time_constraint(
         self, constraint: Dict[str, Any], default_timezone: str
@@ -298,32 +268,9 @@ class AvailabilityService:
             "@odata.context": "$metadata#microsoft.graph.meetingTimeSuggestionsResult",
         }
 
-    def _format_graph_datetime(self, datetime_str: str) -> str:
-        """
-        Convert MS Graph datetime string to ISO format with timezone offset.
-
-        MS Graph returns: "2025-12-10T10:00:00.0000000"
-        We convert to: "2025-12-10T10:00:00+01:00"
-        """
-        if not datetime_str:
-            return None
-
-        # Parse the datetime string (remove fractional seconds if present)
-        dt_str = datetime_str.split(".")[0]
-        try:
-            dt = datetime.fromisoformat(dt_str)
-        except ValueError:
-            return datetime_str  # Return as-is if parsing fails
-
-        # The datetime from Graph is already in local timezone (due to Prefer header)
-        # Add the local timezone offset
-        local_now = datetime.now()
-        utc_now = datetime.now(timezone.utc).replace(tzinfo=None)
-        offset_seconds = round((local_now - utc_now).total_seconds() / 60) * 60
-        local_tz = timezone(timedelta(seconds=offset_seconds))
-
-        dt = dt.replace(tzinfo=local_tz)
-        return dt.isoformat()
+    def _format_graph_datetime(self, datetime_str: str) -> Optional[str]:
+        """Convert MS Graph datetime string to ISO format with timezone offset."""
+        return format_graph_datetime(datetime_str)
 
     def format_as_tana(
         self,

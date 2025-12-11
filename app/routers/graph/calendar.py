@@ -1,11 +1,22 @@
-"""Calendar endpoints - MS Graph style API"""
+"""Calendar endpoints - MS Graph style API."""
 
 from typing import Optional, List
+
 from fastapi import APIRouter, Query, Body, HTTPException
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
-from app.models.filters import Importance, Sensitivity, ShowAs, ResponseStatus
+from app.constants import CALENDAR_VIEW_FIELDS
+from app.models import (
+    Importance,
+    Sensitivity,
+    ShowAs,
+    ResponseStatus,
+    DateTimeTimeZoneModel,
+    AttendeeModel,
+    LocationModel,
+    ItemBodyModel,
+)
 from app.models.query_params import resolve_calendar_view_params
 from app.services.calendar_service import calendar_service
 from app.services.template_service import template_service
@@ -14,60 +25,6 @@ router = APIRouter(tags=["Calendar"])
 
 
 # --- Pydantic Models for Create Event ---
-
-
-class DateTimeTimeZoneModel(BaseModel):
-    """DateTime with timezone for event start/end"""
-
-    dateTime: str = Field(
-        ..., description="ISO 8601 datetime", examples=["2024-12-10T09:00:00"]
-    )
-    timeZone: Optional[str] = Field(
-        default=None,
-        description="Timezone name (defaults to system timezone)",
-        examples=["Europe/Berlin", "Pacific Standard Time"],
-    )
-
-
-class ItemBodyModel(BaseModel):
-    """Event body content"""
-
-    contentType: Optional[str] = Field(
-        default="HTML",
-        description="Content type: HTML or Text",
-        examples=["HTML", "Text"],
-    )
-    content: str = Field(..., description="Body content")
-
-
-class LocationModel(BaseModel):
-    """Event location"""
-
-    displayName: str = Field(
-        ...,
-        description="Location name",
-        examples=["Conference Room A", "Teams Meeting"],
-    )
-
-
-class EmailAddressModel(BaseModel):
-    """Email address with optional name"""
-
-    address: str = Field(
-        ..., description="Email address", examples=["user@example.com"]
-    )
-    name: Optional[str] = Field(default=None, description="Display name")
-
-
-class AttendeeModel(BaseModel):
-    """Event attendee"""
-
-    emailAddress: EmailAddressModel
-    type: Optional[str] = Field(
-        default="required",
-        description="Attendee type: required, optional, resource",
-        examples=["required", "optional"],
-    )
 
 
 class CreateEventRequest(BaseModel):
@@ -141,37 +98,6 @@ class CreateEventRequest(BaseModel):
             ]
         }
     }
-
-
-# MS Graph field names available for $select
-CALENDAR_VIEW_FIELDS = [
-    "id",
-    "subject",
-    "bodyPreview",
-    "body",
-    "start",
-    "end",
-    "location",
-    "locations",
-    "attendees",
-    "organizer",
-    "categories",
-    "importance",
-    "sensitivity",
-    "showAs",
-    "isAllDay",
-    "isCancelled",
-    "isOnlineMeeting",
-    "onlineMeeting",
-    "onlineMeetingUrl",
-    "webLink",
-    "responseStatus",
-    "recurrence",
-    "type",
-    "hasAttachments",
-    "isReminderOn",
-    "reminderMinutesBeforeStart",
-]
 
 
 # Shared docstrings for reuse

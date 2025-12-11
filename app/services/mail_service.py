@@ -1,4 +1,4 @@
-"""Mail service - MS Graph style responses via Kiota SDK"""
+"""Mail service - MS Graph style responses via Kiota SDK."""
 
 from typing import Optional, List, Dict, Any
 
@@ -8,28 +8,19 @@ from msgraph.generated.models.item_body import ItemBody
 from msgraph.generated.models.body_type import BodyType
 from msgraph.generated.models.recipient import Recipient
 from msgraph.generated.models.email_address import EmailAddress
+from msgraph.generated.models.importance import Importance
 from msgraph.generated.users.item.mail_folders.item.messages.delta.delta_request_builder import (
     DeltaRequestBuilder,
 )
 
+from app.constants import WELL_KNOWN_MAIL_FOLDERS
 from app.services.graph_service import graph_service
 from app.services.delta_cache_service import delta_cache_service
 from app.utils.timezone_utils import format_datetime_local
 
 
-# Well-known folder name mappings
-WELL_KNOWN_FOLDERS = {
-    "inbox": "inbox",
-    "drafts": "drafts",
-    "sent": "sentitems",
-    "sentitems": "sentitems",
-    "deleted": "deleteditems",
-    "deleteditems": "deleteditems",
-    "junk": "junkemail",
-    "junkemail": "junkemail",
-    "archive": "archive",
-    "outbox": "outbox",
-}
+# Alias for backward compatibility
+WELL_KNOWN_FOLDERS = WELL_KNOWN_MAIL_FOLDERS
 
 
 class MailService:
@@ -212,8 +203,6 @@ class MailService:
 
         # Importance
         if importance:
-            from msgraph.generated.models.importance import Importance
-
             importance_map = {
                 "low": Importance.Low,
                 "normal": Importance.Normal,

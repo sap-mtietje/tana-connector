@@ -1,7 +1,10 @@
-"""Template rendering service using Jinja2"""
+"""Template rendering service using Jinja2."""
 
+from datetime import datetime
 from typing import Any, Dict, List
+
 from jinja2 import Environment, TemplateSyntaxError, UndefinedError
+
 from app.utils.description_utils import process_description
 
 
@@ -131,8 +134,6 @@ class TemplateService:
 
         try:
             # Handle ISO format from Graph API
-            from datetime import datetime
-
             clean_str = date_string.replace("Z", "").replace(".0000000", "")
             if "T" in clean_str:
                 dt = datetime.fromisoformat(clean_str)

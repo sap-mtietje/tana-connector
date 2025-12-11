@@ -1,37 +1,19 @@
-"""Mail endpoints - MS Graph style API"""
+"""Mail endpoints - MS Graph style API."""
 
 from typing import Optional, List
-from pydantic import BaseModel, Field
+
 from fastapi import APIRouter, HTTPException, Query, Body, Path
 from fastapi.responses import PlainTextResponse
+from pydantic import BaseModel, Field
 
+from app.constants import MESSAGE_FIELDS
+from app.models import EmailAddressModel, ItemBodyModel
 from app.services.mail_service import mail_service
 from app.services.template_service import template_service
 from app.services.delta_cache_service import delta_cache_service
 from app.utils.filter_utils import apply_filter
 
 router = APIRouter(tags=["Mail"])
-
-
-# MS Graph field names available for $select on messages
-MESSAGE_FIELDS = [
-    "id",
-    "subject",
-    "bodyPreview",
-    "body",
-    "from",
-    "toRecipients",
-    "ccRecipients",
-    "bccRecipients",
-    "receivedDateTime",
-    "sentDateTime",
-    "hasAttachments",
-    "importance",
-    "isRead",
-    "isDraft",
-    "webLink",
-    "conversationId",
-]
 
 # Shared docstrings
 _DELTA_PARAMS_DOC = """
@@ -82,42 +64,20 @@ Multiple conditions separated by comma (AND logic).
 """
 
 
-class EmailAddressInput(BaseModel):
-    """Email address with optional display name"""
-
-    address: str = Field(
-        ..., description="Email address", examples=["colleague@company.com"]
-    )
-    name: Optional[str] = Field(
-        default=None, description="Display name", examples=["John Doe"]
-    )
-
-
-class MessageBody(BaseModel):
-    """Email body content"""
-
-    contentType: str = Field(
-        default="HTML",
-        description="Content type: HTML or Text",
-        examples=["HTML", "Text"],
-    )
-    content: str = Field(..., description="Body content", examples=["<p>Hello!</p>"])
-
-
 class CreateDraftRequest(BaseModel):
     """Request body for creating a draft email"""
 
     subject: str = Field(
         ..., description="Email subject", examples=["Meeting Follow-up"]
     )
-    body: MessageBody = Field(..., description="Email body")
-    toRecipients: Optional[List[EmailAddressInput]] = Field(
+    body: ItemBodyModel = Field(..., description="Email body")
+    toRecipients: Optional[List[EmailAddressModel]] = Field(
         default=None, description="To recipients"
     )
-    ccRecipients: Optional[List[EmailAddressInput]] = Field(
+    ccRecipients: Optional[List[EmailAddressModel]] = Field(
         default=None, description="CC recipients"
     )
-    bccRecipients: Optional[List[EmailAddressInput]] = Field(
+    bccRecipients: Optional[List[EmailAddressModel]] = Field(
         default=None, description="BCC recipients"
     )
     importance: Optional[str] = Field(
