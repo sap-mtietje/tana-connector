@@ -6,14 +6,13 @@ from fastapi import APIRouter, Body, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
+from app.dependencies import AvailabilityServiceDep, TemplateServiceDep
 from app.exceptions import GraphAPIError
 from app.models import (
     AttendeeModel,
     LocationConstraintModel,
     TimeConstraintModel,
 )
-from app.services.availability_service import availability_service
-from app.services.template_service import template_service
 from app.utils.date_utils import parse_date_keyword_to_range
 
 router = APIRouter(tags=["Availability"])
@@ -157,6 +156,7 @@ POST /me/findMeetingTimes?_dateKeyword=this-week
 """,
 )
 async def find_meeting_times(
+    availability_service: AvailabilityServiceDep,
     request: FindMeetingTimesRequest,
     _dateKeyword: Optional[str] = Query(
         default=None,
@@ -262,6 +262,8 @@ Each suggestion has:
     response_class=PlainTextResponse,
 )
 async def find_meeting_times_with_template(
+    availability_service: AvailabilityServiceDep,
+    template_service: TemplateServiceDep,
     template_body: str = Body(
         ..., media_type="text/plain", description="Jinja2 template string"
     ),

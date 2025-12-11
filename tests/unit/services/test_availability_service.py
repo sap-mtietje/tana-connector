@@ -6,11 +6,17 @@ from unittest.mock import MagicMock
 from app.services.availability_service import AvailabilityService
 
 
+def _create_availability_service() -> AvailabilityService:
+    """Create an AvailabilityService with a mock GraphService."""
+    mock_graph_service = MagicMock()
+    return AvailabilityService(graph_service=mock_graph_service)
+
+
 class TestBuildAttendees:
     """Tests for AvailabilityService._build_attendees method"""
 
     def setup_method(self):
-        self.service = AvailabilityService()
+        self.service = _create_availability_service()
 
     def test_single_attendee_full_format(self):
         """Test building single attendee with full format"""
@@ -89,7 +95,7 @@ class TestBuildTimeConstraint:
     """Tests for AvailabilityService._build_time_constraint method"""
 
     def setup_method(self):
-        self.service = AvailabilityService()
+        self.service = _create_availability_service()
 
     def test_work_activity_domain(self):
         """Test time constraint with work activity domain"""
@@ -205,7 +211,7 @@ class TestBuildLocationConstraint:
     """Tests for AvailabilityService._build_location_constraint method"""
 
     def setup_method(self):
-        self.service = AvailabilityService()
+        self.service = _create_availability_service()
 
     def test_basic_location_constraint(self):
         """Test basic location constraint"""
@@ -251,7 +257,7 @@ class TestParseDuration:
     """Tests for AvailabilityService._parse_duration method"""
 
     def setup_method(self):
-        self.service = AvailabilityService()
+        self.service = _create_availability_service()
 
     def test_one_hour(self):
         """Test parsing PT1H"""
@@ -288,7 +294,7 @@ class TestResultToDict:
     """Tests for AvailabilityService._result_to_dict method"""
 
     def setup_method(self):
-        self.service = AvailabilityService()
+        self.service = _create_availability_service()
 
     def test_empty_result(self):
         """Test converting empty result"""
@@ -415,7 +421,7 @@ class TestFormatAsTana:
     """Tests for AvailabilityService.format_as_tana method"""
 
     def setup_method(self):
-        self.service = AvailabilityService()
+        self.service = _create_availability_service()
 
     def test_empty_suggestions(self):
         """Test formatting empty suggestions"""

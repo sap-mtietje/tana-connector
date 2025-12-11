@@ -3,15 +3,24 @@
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
-
 from app.services.mail_service import MailService, WELL_KNOWN_FOLDERS
+
+
+def _create_mail_service() -> MailService:
+    """Create a MailService with mock dependencies."""
+    mock_graph_service = MagicMock()
+    mock_delta_cache_service = MagicMock()
+    return MailService(
+        graph_service=mock_graph_service,
+        delta_cache_service=mock_delta_cache_service,
+    )
 
 
 class TestBuildRecipients:
     """Tests for MailService._build_recipients method"""
 
     def setup_method(self):
-        self.service = MailService()
+        self.service = _create_mail_service()
 
     def test_single_recipient_with_name(self):
         """Test building single recipient with name"""
@@ -59,7 +68,7 @@ class TestMessageToDict:
     """Tests for MailService._message_to_dict method"""
 
     def setup_method(self):
-        self.service = MailService()
+        self.service = _create_mail_service()
 
     def test_basic_fields(self):
         """Test basic message fields are converted"""
@@ -223,7 +232,7 @@ class TestResolveFolderId:
     """Tests for MailService._resolve_folder_id method"""
 
     def setup_method(self):
-        self.service = MailService()
+        self.service = _create_mail_service()
 
     def test_well_known_folder_inbox(self):
         """Test inbox folder resolution"""
@@ -256,7 +265,7 @@ class TestFormatAsTana:
     """Tests for MailService.format_as_tana method"""
 
     def setup_method(self):
-        self.service = MailService()
+        self.service = _create_mail_service()
 
     def test_empty_messages(self):
         """Test formatting empty message list"""

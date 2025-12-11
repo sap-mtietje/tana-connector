@@ -7,6 +7,7 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from app.constants import CALENDAR_VIEW_FIELDS
+from app.dependencies import CalendarServiceDep, TemplateServiceDep
 from app.exceptions import GraphAPIError
 from app.models import (
     AttendeeModel,
@@ -19,8 +20,6 @@ from app.models import (
     ShowAs,
 )
 from app.models.query_params import resolve_calendar_view_params
-from app.services.calendar_service import calendar_service
-from app.services.template_service import template_service
 
 router = APIRouter(tags=["Calendar"])
 
@@ -166,6 +165,7 @@ GET /me/CalendarView?_dateKeyword=tomorrow&_showAs=busy&_format=tana
 """,
 )
 async def get_calendar_view(
+    calendar_service: CalendarServiceDep,
     # MS Graph standard params
     startDateTime: Optional[str] = Query(
         default=None,
@@ -335,6 +335,8 @@ Same parameters as GET, plus a Jinja2 template in the request body.
     response_class=PlainTextResponse,
 )
 async def post_calendar_view_with_template(
+    calendar_service: CalendarServiceDep,
+    template_service: TemplateServiceDep,
     template_body: str = Body(
         ..., media_type="text/plain", description="Jinja2 template string"
     ),
@@ -443,7 +445,10 @@ Book a meeting after finding available times with `/me/findMeetingTimes`.
 ```
 """,
 )
-async def create_event(request: CreateEventRequest):
+async def create_event(
+    calendar_service: CalendarServiceDep,
+    request: CreateEventRequest,
+):
     try:
         # Build attendees list
         attendees = None

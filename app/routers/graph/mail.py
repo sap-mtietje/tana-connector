@@ -7,11 +7,9 @@ from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from app.constants import MESSAGE_FIELDS
+from app.dependencies import DeltaCacheServiceDep, MailServiceDep, TemplateServiceDep
 from app.exceptions import GraphAPIError
 from app.models import EmailAddressModel, ItemBodyModel
-from app.services.delta_cache_service import delta_cache_service
-from app.services.mail_service import mail_service
-from app.services.template_service import template_service
 from app.utils.filter_utils import apply_filter
 
 router = APIRouter(tags=["Mail"])
@@ -149,6 +147,7 @@ GET /me/mailFolders/inbox/messages/delta?_format=tana
 """,
 )
 async def get_messages_delta(
+    mail_service: MailServiceDep,
     folder_id: str = Path(
         ...,
         description="Mail folder ID or well-known name (inbox, sent, drafts, etc.)",
@@ -269,6 +268,8 @@ Same parameters as GET, plus a Jinja2 template in the request body.
     response_class=PlainTextResponse,
 )
 async def post_messages_delta_with_template(
+    mail_service: MailServiceDep,
+    template_service: TemplateServiceDep,
     folder_id: str = Path(..., description="Mail folder ID or well-known name"),
     template_body: str = Body(
         ..., media_type="text/plain", description="Jinja2 template string"
@@ -329,6 +330,7 @@ Use this when you want to start fresh or if sync state becomes corrupted.
 """,
 )
 async def clear_delta_cache(
+    delta_cache_service: DeltaCacheServiceDep,
     folder_id: str = Path(..., description="Mail folder ID or well-known name"),
 ):
     """Clear cached delta token for a folder."""
@@ -354,6 +356,7 @@ async def clear_delta_cache(
     description="Get information about the cached delta token for debugging.",
 )
 async def get_delta_cache_info(
+    delta_cache_service: DeltaCacheServiceDep,
     folder_id: str = Path(..., description="Mail folder ID or well-known name"),
 ):
     """Get delta cache info for debugging."""
@@ -425,7 +428,10 @@ Returns the created draft message with its ID, which can be used to:
 Create email drafts from Tana workflows for review before sending.
 """,
 )
-async def create_draft(request: CreateDraftRequest):
+async def create_draft(
+    mail_service: MailServiceDep,
+    request: CreateDraftRequest,
+):
     """Create a draft email message."""
     try:
         # Convert recipients to service format

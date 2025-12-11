@@ -9,8 +9,9 @@ Tests cover:
 - Error handling
 """
 
+import os
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 
 
@@ -332,7 +333,6 @@ class TestCreateEvent:
             },
         )
 
-        # GraphAPIError returns 502 (Bad Gateway) for upstream API errors
         assert response.status_code == 502
 
 
@@ -343,29 +343,59 @@ class TestCreateEvent:
 
 @pytest.fixture
 def mock_availability_service():
-    """Mock the availability_service.find_meeting_times method"""
-    with patch(
-        "app.routers.graph.availability.availability_service.find_meeting_times",
-        new_callable=AsyncMock,
-    ) as mock:
-        yield mock
+    """Mock AvailabilityService using FastAPI dependency override"""
+    os.environ["CLIENT_ID"] = "test-client-id"
+    os.environ["TENANT_ID"] = "test-tenant-id"
+
+    from app.main import app
+    from app.dependencies import get_availability_service
+    from app.services.availability_service import AvailabilityService
+
+    # Create a real service with mock graph_service for format_as_tana
+    mock_graph = MagicMock()
+    real_service = AvailabilityService(graph_service=mock_graph)
+
+    # Create a mock service
+    mock_service = MagicMock(spec=AvailabilityService)
+    mock_service.find_meeting_times = AsyncMock()
+    mock_service.format_as_tana = real_service.format_as_tana
+
+    # Override the dependency
+    app.dependency_overrides[get_availability_service] = lambda: mock_service
+
+    yield mock_service.find_meeting_times
+
+    # Clean up
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
 def mock_create_event():
-    """Mock the calendar_service.create_event method"""
-    with patch(
-        "app.routers.graph.calendar.calendar_service.create_event",
-        new_callable=AsyncMock,
-    ) as mock:
-        yield mock
+    """Mock CalendarService.create_event using FastAPI dependency override"""
+    os.environ["CLIENT_ID"] = "test-client-id"
+    os.environ["TENANT_ID"] = "test-tenant-id"
+
+    from app.main import app
+    from app.dependencies import get_calendar_service, reset_singletons
+    from app.services.calendar_service import CalendarService
+
+    # Create a mock service
+    mock_service = MagicMock(spec=CalendarService)
+    mock_service.create_event = AsyncMock()
+
+    # Override the dependency
+    app.dependency_overrides[get_calendar_service] = lambda: mock_service
+
+    yield mock_service.create_event
+
+    # Clean up
+    app.dependency_overrides.clear()
+    reset_singletons()
 
 
 @pytest.fixture
 def client():
     """FastAPI test client"""
-    import os
-
     os.environ["CLIENT_ID"] = "test-client-id"
     os.environ["TENANT_ID"] = "test-tenant-id"
 

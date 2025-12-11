@@ -1,30 +1,44 @@
 """Mail service - MS Graph style responses via Kiota SDK."""
 
-from typing import Optional, List, Dict, Any
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
 
 from kiota_abstractions.base_request_configuration import RequestConfiguration
-from msgraph.generated.models.message import Message
-from msgraph.generated.models.item_body import ItemBody
 from msgraph.generated.models.body_type import BodyType
-from msgraph.generated.models.recipient import Recipient
 from msgraph.generated.models.email_address import EmailAddress
 from msgraph.generated.models.importance import Importance
+from msgraph.generated.models.item_body import ItemBody
+from msgraph.generated.models.message import Message
+from msgraph.generated.models.recipient import Recipient
 from msgraph.generated.users.item.mail_folders.item.messages.delta.delta_request_builder import (
     DeltaRequestBuilder,
 )
 
 from app.constants import WELL_KNOWN_MAIL_FOLDERS
-from app.services.graph_service import graph_service
-from app.services.delta_cache_service import delta_cache_service
+from app.services.delta_cache_service import DeltaCacheService
+from app.services.graph_service import GraphService
 from app.utils.timezone_utils import format_datetime_local
-
 
 # Alias for backward compatibility
 WELL_KNOWN_FOLDERS = WELL_KNOWN_MAIL_FOLDERS
 
 
 class MailService:
-    """Mail operations using Kiota SDK, returning MS Graph format"""
+    """Mail operations using Kiota SDK, returning MS Graph format.
+
+    Args:
+        graph_service: GraphService instance for MS Graph API calls (required).
+        delta_cache_service: DeltaCacheService instance for delta token caching (required).
+    """
+
+    def __init__(
+        self,
+        graph_service: GraphService,
+        delta_cache_service: DeltaCacheService,
+    ) -> None:
+        self._graph_service = graph_service
+        self._delta_cache_service = delta_cache_service
 
     def _resolve_folder_id(self, folder_id: str) -> str:
         """Resolve well-known folder names to MS Graph folder IDs."""
@@ -63,13 +77,13 @@ class MailService:
             - _isInitialSync: True if this is a full sync (no prior delta token)
             - _pagesFetched: Number of pages fetched (when follow_pagination=True)
         """
-        client = await graph_service.get_client()
+        client = await self._graph_service.get_client()
         resolved_folder = self._resolve_folder_id(folder_id)
 
         # Check for cached delta token
         cached_delta_link = None
         if use_cache:
-            cached_delta_link = delta_cache_service.get_token(resolved_folder)
+            cached_delta_link = self._delta_cache_service.get_token(resolved_folder)
 
         if cached_delta_link:
             # Use cached delta link for incremental sync
@@ -148,7 +162,9 @@ class MailService:
             response["@odata.deltaLink"] = result.odata_delta_link
             # Auto-cache the delta link for next sync
             if use_cache:
-                delta_cache_service.save_token(resolved_folder, result.odata_delta_link)
+                self._delta_cache_service.save_token(
+                    resolved_folder, result.odata_delta_link
+                )
 
         if result.odata_next_link:
             response["@odata.nextLink"] = result.odata_next_link
@@ -180,7 +196,7 @@ class MailService:
         Returns:
             Created draft message in MS Graph JSON format
         """
-        client = await graph_service.get_client()
+        client = await self._graph_service.get_client()
 
         # Build the message object
         message = Message()
@@ -367,6 +383,3 @@ class MailService:
         result["categories"] = message.categories or []
 
         return result
-
-
-mail_service = MailService()

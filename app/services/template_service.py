@@ -1,5 +1,7 @@
 """Template rendering service using Jinja2."""
 
+from __future__ import annotations
+
 from datetime import datetime
 from typing import Any, Dict, List
 
@@ -160,6 +162,3 @@ class TemplateService:
             return date_string
         except Exception:
             return date_string
-
-
-template_service = TemplateService()

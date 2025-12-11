@@ -1,14 +1,21 @@
 """Unit tests for CalendarService"""
 
 from unittest.mock import MagicMock
+
 from app.services.calendar_service import CalendarService
+
+
+def _create_calendar_service() -> CalendarService:
+    """Create a CalendarService with a mock GraphService."""
+    mock_graph_service = MagicMock()
+    return CalendarService(graph_service=mock_graph_service)
 
 
 class TestEventToDict:
     """Tests for CalendarService._event_to_dict method"""
 
     def setup_method(self):
-        self.service = CalendarService()
+        self.service = _create_calendar_service()
 
     def test_basic_fields(self):
         """Test basic event fields are converted"""
@@ -241,7 +248,7 @@ class TestFormatAsTana:
     """Tests for CalendarService.format_as_tana method"""
 
     def setup_method(self):
-        self.service = CalendarService()
+        self.service = _create_calendar_service()
 
     def test_empty_events(self):
         """Test formatting empty event list"""
@@ -346,7 +353,7 @@ class TestBuildAttendees:
     """Tests for CalendarService._build_attendees method"""
 
     def setup_method(self):
-        self.service = CalendarService()
+        self.service = _create_calendar_service()
 
     def test_single_attendee_full_format(self):
         """Test building single attendee with full format"""

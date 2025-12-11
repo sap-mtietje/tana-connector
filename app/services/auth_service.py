@@ -1,4 +1,6 @@
-"""MSAL authentication service for Microsoft Graph API"""
+"""MSAL authentication service for Microsoft Graph API."""
+
+from __future__ import annotations
 
 import asyncio
 from typing import Optional
@@ -90,7 +92,3 @@ class AuthService:
             AUTH_RECORD_PATH.write_text(record.serialize(), encoding="utf-8")
         except Exception as e:
             print(f"⚠️  Failed to save auth record: {e}")
-
-
-# Global auth service instance
-auth_service = AuthService()

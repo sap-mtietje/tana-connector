@@ -7,7 +7,7 @@ from azure.identity import (
     AuthenticationRecord,
 )
 
-from app.services.auth_service import AuthService, auth_service
+from app.services.auth_service import AuthService
 
 
 @pytest.mark.unit
@@ -208,22 +208,6 @@ class TestAuthService:
 
         # Verify error was caught (no exception raised)
         mock_path.write_text.assert_called_once()
-
-
-@pytest.mark.unit
-class TestAuthServiceSingleton:
-    """Tests for the global auth_service instance"""
-
-    def test_global_instance_exists(self):
-        """Should have a global auth_service instance"""
-        assert auth_service is not None
-        assert isinstance(auth_service, AuthService)
-
-    def test_global_instance_is_singleton(self):
-        """Should use the same instance across imports"""
-        from app.services.auth_service import auth_service as imported_service
-
-        assert auth_service is imported_service
 
 
 @pytest.mark.unit

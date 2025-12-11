@@ -39,6 +39,8 @@ delta_cache.clear_token("inbox")
 ```
 """
 
+from __future__ import annotations
+
 import json
 from datetime import datetime, timezone
 from pathlib import Path
@@ -159,7 +161,3 @@ class DeltaCacheService:
                 return json.load(f)
         except (json.JSONDecodeError, IOError):
             return None
-
-
-# Singleton instance
-delta_cache_service = DeltaCacheService()

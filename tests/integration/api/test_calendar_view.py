@@ -12,7 +12,7 @@ Tests cover:
 """
 
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 
 from tests.fixtures.factories import (
@@ -438,12 +438,33 @@ class TestCalendarViewODataParams:
 
 @pytest.fixture
 def mock_calendar_service():
-    """Mock the calendar_service.get_calendar_view method"""
-    with patch(
-        "app.routers.graph.calendar.calendar_service.get_calendar_view",
-        new_callable=AsyncMock,
-    ) as mock:
-        yield mock
+    """Mock CalendarService using FastAPI dependency override"""
+    import os
+
+    os.environ["CLIENT_ID"] = "test-client-id"
+    os.environ["TENANT_ID"] = "test-tenant-id"
+
+    from app.main import app
+    from app.dependencies import get_calendar_service, reset_singletons
+    from app.services.calendar_service import CalendarService
+
+    # Create a real service with mock graph_service for format_as_tana
+    mock_graph = MagicMock()
+    real_service = CalendarService(graph_service=mock_graph)
+
+    # Create a mock service
+    mock_service = MagicMock(spec=CalendarService)
+    mock_service.get_calendar_view = AsyncMock()
+    mock_service.format_as_tana = real_service.format_as_tana
+
+    # Override the dependency
+    app.dependency_overrides[get_calendar_service] = lambda: mock_service
+
+    yield mock_service.get_calendar_view
+
+    # Clean up
+    app.dependency_overrides.clear()
+    reset_singletons()
 
 
 @pytest.fixture

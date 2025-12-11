@@ -1,27 +1,36 @@
 """Calendar service - MS Graph style responses via Kiota SDK."""
 
-from typing import Optional, List, Dict, Any
+from __future__ import annotations
 
+from typing import Any, Dict, List, Optional
+
+from msgraph.generated.models.attendee import Attendee
+from msgraph.generated.models.body_type import BodyType
+from msgraph.generated.models.date_time_time_zone import DateTimeTimeZone
+from msgraph.generated.models.event import Event
+from msgraph.generated.models.free_busy_status import FreeBusyStatus
+from msgraph.generated.models.importance import Importance
+from msgraph.generated.models.item_body import ItemBody
+from msgraph.generated.models.location import Location
+from msgraph.generated.models.sensitivity import Sensitivity
 from msgraph.generated.users.item.calendar_view.calendar_view_request_builder import (
     CalendarViewRequestBuilder,
 )
-from msgraph.generated.models.event import Event
-from msgraph.generated.models.item_body import ItemBody
-from msgraph.generated.models.body_type import BodyType
-from msgraph.generated.models.date_time_time_zone import DateTimeTimeZone
-from msgraph.generated.models.location import Location
-from msgraph.generated.models.attendee import Attendee
-from msgraph.generated.models.importance import Importance
-from msgraph.generated.models.sensitivity import Sensitivity
-from msgraph.generated.models.free_busy_status import FreeBusyStatus
 
-from app.services.graph_service import graph_service
-from app.utils.timezone_utils import get_system_timezone_name, format_graph_datetime
+from app.services.graph_service import GraphService
 from app.utils.attendee_utils import build_attendees
+from app.utils.timezone_utils import format_graph_datetime, get_system_timezone_name
 
 
 class CalendarService:
-    """Calendar operations using Kiota SDK, returning MS Graph format"""
+    """Calendar operations using Kiota SDK, returning MS Graph format.
+
+    Args:
+        graph_service: GraphService instance for MS Graph API calls (required).
+    """
+
+    def __init__(self, graph_service: GraphService) -> None:
+        self._graph_service = graph_service
 
     async def get_calendar_view(
         self,
@@ -39,7 +48,7 @@ class CalendarService:
 
         Returns events in MS Graph JSON format (not normalized).
         """
-        client = await graph_service.get_client()
+        client = await self._graph_service.get_client()
 
         # Use the new RequestConfiguration pattern (avoids deprecation warning)
         timezone_name = get_system_timezone_name()
@@ -290,7 +299,7 @@ class CalendarService:
         Returns:
             Created event in MS Graph JSON format
         """
-        client = await graph_service.get_client()
+        client = await self._graph_service.get_client()
         timezone_name = get_system_timezone_name()
 
         # Build event object
@@ -380,6 +389,3 @@ class CalendarService:
     def _build_attendees(self, attendees: List[Dict[str, Any]]) -> List[Attendee]:
         """Convert attendee dicts to Kiota Attendee objects."""
         return build_attendees(attendees, Attendee)
-
-
-calendar_service = CalendarService()

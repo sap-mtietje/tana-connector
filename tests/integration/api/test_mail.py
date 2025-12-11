@@ -11,7 +11,7 @@ Tests cover:
 
 import os
 import pytest
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock
 from fastapi.testclient import TestClient
 
 
@@ -390,7 +390,6 @@ class TestCreateDraft:
             },
         )
 
-        # GraphAPIError returns 502 (Bad Gateway) for upstream API errors
         assert response.status_code == 502
         assert "Failed to create draft" in response.json()["message"]
 
@@ -402,29 +401,81 @@ class TestCreateDraft:
 
 @pytest.fixture
 def mock_mail_service():
-    """Mock the mail_service.get_messages_delta method"""
-    with patch(
-        "app.routers.graph.mail.mail_service.get_messages_delta",
-        new_callable=AsyncMock,
-    ) as mock:
-        yield mock
+    """Mock MailService using FastAPI dependency override"""
+    os.environ["CLIENT_ID"] = "test-client-id"
+    os.environ["TENANT_ID"] = "test-tenant-id"
+
+    from app.main import app
+    from app.dependencies import get_mail_service, reset_singletons
+    from app.services.mail_service import MailService
+
+    # Create a real service with mock dependencies for format_as_tana
+    mock_graph = MagicMock()
+    mock_delta_cache = MagicMock()
+    real_service = MailService(
+        graph_service=mock_graph,
+        delta_cache_service=mock_delta_cache,
+    )
+
+    # Create a mock service
+    mock_service = MagicMock(spec=MailService)
+    mock_service.get_messages_delta = AsyncMock()
+    mock_service.format_as_tana = real_service.format_as_tana
+
+    # Override the dependency
+    app.dependency_overrides[get_mail_service] = lambda: mock_service
+
+    yield mock_service.get_messages_delta
+
+    # Clean up
+    app.dependency_overrides.clear()
+    reset_singletons()
 
 
 @pytest.fixture
 def mock_mail_service_create_draft():
-    """Mock the mail_service.create_draft method"""
-    with patch(
-        "app.routers.graph.mail.mail_service.create_draft",
-        new_callable=AsyncMock,
-    ) as mock:
-        yield mock
+    """Mock MailService.create_draft using FastAPI dependency override"""
+    os.environ["CLIENT_ID"] = "test-client-id"
+    os.environ["TENANT_ID"] = "test-tenant-id"
+
+    from app.main import app
+    from app.dependencies import get_mail_service, reset_singletons
+    from app.services.mail_service import MailService
+
+    # Create a mock service
+    mock_service = MagicMock(spec=MailService)
+    mock_service.create_draft = AsyncMock()
+
+    # Override the dependency
+    app.dependency_overrides[get_mail_service] = lambda: mock_service
+
+    yield mock_service.create_draft
+
+    # Clean up
+    app.dependency_overrides.clear()
+    reset_singletons()
 
 
 @pytest.fixture
 def mock_delta_cache_service():
-    """Mock the delta_cache_service"""
-    with patch("app.routers.graph.mail.delta_cache_service") as mock:
-        yield mock
+    """Mock DeltaCacheService using FastAPI dependency override"""
+    os.environ["CLIENT_ID"] = "test-client-id"
+    os.environ["TENANT_ID"] = "test-tenant-id"
+
+    from app.main import app
+    from app.dependencies import get_delta_cache_service, reset_singletons
+
+    # Create a mock service
+    mock_service = MagicMock()
+
+    # Override the dependency
+    app.dependency_overrides[get_delta_cache_service] = lambda: mock_service
+
+    yield mock_service
+
+    # Clean up
+    app.dependency_overrides.clear()
+    reset_singletons()
 
 
 @pytest.fixture

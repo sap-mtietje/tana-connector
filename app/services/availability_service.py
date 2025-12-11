@@ -1,26 +1,35 @@
 """Availability service - Find meeting times via MS Graph Kiota SDK."""
 
-from typing import Optional, List, Dict, Any
-from datetime import timedelta
+from __future__ import annotations
 
+from datetime import timedelta
+from typing import Any, Dict, List, Optional
+
+from msgraph.generated.models.activity_domain import ActivityDomain
+from msgraph.generated.models.attendee_base import AttendeeBase
+from msgraph.generated.models.date_time_time_zone import DateTimeTimeZone
+from msgraph.generated.models.location_constraint import LocationConstraint
+from msgraph.generated.models.location_constraint_item import LocationConstraintItem
+from msgraph.generated.models.time_constraint import TimeConstraint
+from msgraph.generated.models.time_slot import TimeSlot
 from msgraph.generated.users.item.find_meeting_times.find_meeting_times_post_request_body import (
     FindMeetingTimesPostRequestBody,
 )
-from msgraph.generated.models.attendee_base import AttendeeBase
-from msgraph.generated.models.time_constraint import TimeConstraint
-from msgraph.generated.models.time_slot import TimeSlot
-from msgraph.generated.models.date_time_time_zone import DateTimeTimeZone
-from msgraph.generated.models.activity_domain import ActivityDomain
-from msgraph.generated.models.location_constraint import LocationConstraint
-from msgraph.generated.models.location_constraint_item import LocationConstraintItem
 
-from app.services.graph_service import graph_service
-from app.utils.timezone_utils import get_system_timezone_name, format_graph_datetime
+from app.services.graph_service import GraphService
 from app.utils.attendee_utils import build_attendees
+from app.utils.timezone_utils import format_graph_datetime, get_system_timezone_name
 
 
 class AvailabilityService:
-    """Find meeting times using Kiota SDK, returning MS Graph format"""
+    """Find meeting times using Kiota SDK, returning MS Graph format.
+
+    Args:
+        graph_service: GraphService instance for MS Graph API calls (required).
+    """
+
+    def __init__(self, graph_service: GraphService) -> None:
+        self._graph_service = graph_service
 
     async def find_meeting_times(
         self,
@@ -53,7 +62,7 @@ class AvailabilityService:
             - meetingTimeSuggestions: List of meeting time suggestions
             - emptySuggestionsReason: Reason if no suggestions found
         """
-        client = await graph_service.get_client()
+        client = await self._graph_service.get_client()
         timezone_name = get_system_timezone_name()
 
         # Build request body
@@ -317,6 +326,3 @@ class AvailabilityService:
                 lines.append(f"    - Reason:: {reason}")
 
         return "\n".join(lines)
-
-
-availability_service = AvailabilityService()
