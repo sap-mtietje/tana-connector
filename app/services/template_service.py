@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from jinja2 import Environment, TemplateSyntaxError, UndefinedError
 
+from app.exceptions import TemplateError
 from app.utils.description_utils import process_description
 
 
@@ -73,7 +74,7 @@ class TemplateService:
             Rendered template as string
 
         Raises:
-            ValueError: If template has syntax errors or rendering fails
+            TemplateError: If template has syntax errors or rendering fails
 
         Example:
             # For mail messages
@@ -90,11 +91,29 @@ class TemplateService:
             return rendered
 
         except TemplateSyntaxError as e:
-            raise ValueError(f"Template syntax error at line {e.lineno}: {e.message}")
+            raise TemplateError(
+                message=f"Template syntax error: {e.message}",
+                line_number=e.lineno,
+                details={
+                    "template_snippet": template_string[:200]
+                    if template_string
+                    else None
+                },
+            )
         except UndefinedError as e:
-            raise ValueError(f"Undefined variable in template: {str(e)}")
+            raise TemplateError(
+                message=f"Undefined variable in template: {str(e)}",
+                details={
+                    "template_snippet": template_string[:200]
+                    if template_string
+                    else None
+                },
+            )
         except Exception as e:
-            raise ValueError(f"Template rendering failed: {str(e)}")
+            raise TemplateError(
+                message=f"Template rendering failed: {str(e)}",
+                details={"error_type": type(e).__name__},
+            )
 
     @staticmethod
     def _clean_filter(text: str) -> str:

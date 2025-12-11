@@ -1,15 +1,16 @@
 """Availability endpoints - Find meeting times via MS Graph API."""
 
-from typing import Optional, List
+from typing import List, Optional
 
-from fastapi import APIRouter, Query, Body, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
+from app.exceptions import GraphAPIError
 from app.models import (
     AttendeeModel,
-    TimeConstraintModel,
     LocationConstraintModel,
+    TimeConstraintModel,
 )
 from app.services.availability_service import availability_service
 from app.services.template_service import template_service
@@ -211,8 +212,10 @@ async def find_meeting_times(
         return result
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to find meeting times: {str(e)}"
+        # Wrap unexpected errors in GraphAPIError for consistent handling
+        raise GraphAPIError(
+            message=f"Failed to find meeting times: {str(e)}",
+            details={"error_type": type(e).__name__},
         )
 
 
@@ -333,31 +336,25 @@ async def find_meeting_times_with_template(
             ],
         }
 
-    try:
-        result = await availability_service.find_meeting_times(
-            attendees=attendee_list,
-            time_constraint=time_constraint,
-            meeting_duration=meetingDuration,
-            max_candidates=maxCandidates,
-            return_suggestion_reasons=True,
-            minimum_attendee_percentage=minimumAttendeePercentage,
-        )
+    # Find meeting times and render template
+    # TemplateError propagates to global handler for 400 response
+    # Other exceptions wrapped in GraphAPIError for 502 response
+    result = await availability_service.find_meeting_times(
+        attendees=attendee_list,
+        time_constraint=time_constraint,
+        meeting_duration=meetingDuration,
+        max_candidates=maxCandidates,
+        return_suggestion_reasons=True,
+        minimum_attendee_percentage=minimumAttendeePercentage,
+    )
 
-        # Render template
-        rendered = template_service.render(
-            template_string=template_body,
-            suggestions=result.get("meetingTimeSuggestions", []),
-            count=len(result.get("meetingTimeSuggestions", [])),
-            emptySuggestionsReason=result.get("emptySuggestionsReason", ""),
-            attendees=attendee_list,
-            duration=meetingDuration,
-        )
+    rendered = template_service.render(
+        template_string=template_body,
+        suggestions=result.get("meetingTimeSuggestions", []),
+        count=len(result.get("meetingTimeSuggestions", [])),
+        emptySuggestionsReason=result.get("emptySuggestionsReason", ""),
+        attendees=attendee_list,
+        duration=meetingDuration,
+    )
 
-        return PlainTextResponse(content=rendered)
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to render meeting times: {str(e)}"
-        )
+    return PlainTextResponse(content=rendered)

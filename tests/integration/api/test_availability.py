@@ -169,7 +169,8 @@ class TestFindMeetingTimes:
             },
         )
 
-        assert response.status_code == 500
+        # GraphAPIError returns 502 (Bad Gateway) for upstream API errors
+        assert response.status_code == 502
 
 
 class TestFindMeetingTimesRender:
@@ -331,7 +332,8 @@ class TestCreateEvent:
             },
         )
 
-        assert response.status_code == 500
+        # GraphAPIError returns 502 (Bad Gateway) for upstream API errors
+        assert response.status_code == 502
 
 
 # -------------------------------------------------------------------------

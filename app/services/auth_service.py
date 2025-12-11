@@ -2,13 +2,15 @@
 
 import asyncio
 from typing import Optional
+
 from azure.identity import (
+    AuthenticationRecord,
     InteractiveBrowserCredential,
     TokenCachePersistenceOptions,
-    AuthenticationRecord,
 )
 
-from app.config import CLIENT_ID, TENANT_ID, GRAPH_SCOPES, AUTH_RECORD_PATH
+from app.config import AUTH_RECORD_PATH, CLIENT_ID, GRAPH_SCOPES, TENANT_ID
+from app.exceptions import AuthenticationError
 
 
 class AuthService:
@@ -53,7 +55,10 @@ class AuthService:
     async def _authenticate(self) -> None:
         """Perform interactive authentication and save the record"""
         if self.credential is None:
-            raise RuntimeError("Credential not initialized")
+            raise AuthenticationError(
+                message="Credential not initialized",
+                details={"hint": "Call get_credential() first"},
+            )
 
         print("🔐 First-time authentication required...")
         print("📝 Please complete the authentication in your browser")

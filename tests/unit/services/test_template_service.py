@@ -127,23 +127,27 @@ class TestTemplateServiceErrors:
         assert result == "Meeting at "
 
     def test_invalid_template_syntax_raises_error(self):
-        """Should raise ValueError for invalid template syntax"""
+        """Should raise TemplateError for invalid template syntax"""
+        from app.exceptions import TemplateError
+
         service = TemplateService()
         events = []
         template = "{% for event in events %}{{event.title}}"  # Missing endfor
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(TemplateError) as exc_info:
             service.render_template(template, events, "2025-10-09", "2025-10-10")
 
         assert "Template syntax error" in str(exc_info.value)
 
     def test_invalid_jinja_expression_raises_error(self):
-        """Should raise ValueError for invalid Jinja expression"""
+        """Should raise TemplateError for invalid Jinja expression"""
+        from app.exceptions import TemplateError
+
         service = TemplateService()
         events = [{"title": "Meeting"}]
         template = "{{events[0].title | invalid_filter}}"
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(TemplateError) as exc_info:
             service.render_template(template, events, "2025-10-09", "2025-10-10")
 
         # Invalid filter raises TemplateSyntaxError which becomes "Template syntax error"
@@ -397,13 +401,15 @@ class TestGenericRenderMethod:
         # No T in string, so returns original
         assert result == "December 9, 2025"
 
-    def test_render_undefined_error_raises_valueerror(self):
-        """Should raise ValueError for undefined variable access"""
+    def test_render_undefined_error_raises_template_error(self):
+        """Should raise TemplateError for undefined variable access"""
+        from app.exceptions import TemplateError
+
         service = TemplateService()
         # Force an undefined error by using strict undefined access
         template = "{{ undefined_var.attribute }}"
 
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(TemplateError) as exc_info:
             service.render(template)
 
         assert "Undefined" in str(exc_info.value) or "undefined" in str(exc_info.value)

@@ -1,21 +1,22 @@
 """Calendar endpoints - MS Graph style API."""
 
-from typing import Optional, List
+from typing import List, Optional
 
-from fastapi import APIRouter, Query, Body, HTTPException
+from fastapi import APIRouter, Body, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from app.constants import CALENDAR_VIEW_FIELDS
+from app.exceptions import GraphAPIError
 from app.models import (
+    AttendeeModel,
+    DateTimeTimeZoneModel,
     Importance,
+    ItemBodyModel,
+    LocationModel,
+    ResponseStatus,
     Sensitivity,
     ShowAs,
-    ResponseStatus,
-    DateTimeTimeZoneModel,
-    AttendeeModel,
-    LocationModel,
-    ItemBodyModel,
 )
 from app.models.query_params import resolve_calendar_view_params
 from app.services.calendar_service import calendar_service
@@ -284,8 +285,10 @@ async def get_calendar_view(
         }
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to fetch calendar view: {str(e)}"
+        # Wrap unexpected errors in GraphAPIError for consistent handling
+        raise GraphAPIError(
+            message=f"Failed to fetch calendar view: {str(e)}",
+            details={"error_type": type(e).__name__},
         )
 
 
@@ -379,32 +382,26 @@ async def post_calendar_view_with_template(
         _categories=_categories,
     )
 
-    try:
-        events = await calendar_service.get_calendar_view(
-            start_date_time=params.start_date_time,
-            end_date_time=params.end_date_time,
-            select=params.select,
-            filter=params.filter,
-            orderby=params.orderby,
-            top=params.top,
-            skip=params.skip,
-        )
+    # Fetch events - let GraphAPIError propagate to global handler
+    events = await calendar_service.get_calendar_view(
+        start_date_time=params.start_date_time,
+        end_date_time=params.end_date_time,
+        select=params.select,
+        filter=params.filter,
+        orderby=params.orderby,
+        top=params.top,
+        skip=params.skip,
+    )
 
-        rendered = template_service.render_template(
-            template_string=template_body,
-            events=events,
-            start_date=params.start_date_time,
-            end_date=params.end_date_time,
-        )
+    # Render template - let TemplateError propagate to global handler
+    rendered = template_service.render_template(
+        template_string=template_body,
+        events=events,
+        start_date=params.start_date_time,
+        end_date=params.end_date_time,
+    )
 
-        return PlainTextResponse(content=rendered)
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to render template: {str(e)}"
-        )
+    return PlainTextResponse(content=rendered)
 
 
 @router.post(
@@ -485,4 +482,8 @@ async def create_event(request: CreateEventRequest):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create event: {str(e)}")
+        # Wrap unexpected errors in GraphAPIError for consistent handling
+        raise GraphAPIError(
+            message=f"Failed to create event: {str(e)}",
+            details={"error_type": type(e).__name__},
+        )

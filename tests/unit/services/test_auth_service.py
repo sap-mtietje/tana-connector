@@ -126,10 +126,12 @@ class TestAuthService:
         mock_save_record.assert_called_once_with(mock_record)
 
     async def test_authenticate_without_credential_raises_error(self):
-        """Should raise error if credential not initialized"""
+        """Should raise AuthenticationError if credential not initialized"""
+        from app.exceptions import AuthenticationError
+
         self.service.credential = None
 
-        with pytest.raises(RuntimeError, match="Credential not initialized"):
+        with pytest.raises(AuthenticationError, match="Credential not initialized"):
             await self.service._authenticate()
 
     @patch("app.services.auth_service.AUTH_RECORD_PATH")

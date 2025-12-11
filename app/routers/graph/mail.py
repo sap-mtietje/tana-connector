@@ -1,16 +1,17 @@
 """Mail endpoints - MS Graph style API."""
 
-from typing import Optional, List
+from typing import List, Optional
 
-from fastapi import APIRouter, HTTPException, Query, Body, Path
+from fastapi import APIRouter, Body, HTTPException, Path, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from app.constants import MESSAGE_FIELDS
+from app.exceptions import GraphAPIError
 from app.models import EmailAddressModel, ItemBodyModel
+from app.services.delta_cache_service import delta_cache_service
 from app.services.mail_service import mail_service
 from app.services.template_service import template_service
-from app.services.delta_cache_service import delta_cache_service
 from app.utils.filter_utils import apply_filter
 
 router = APIRouter(tags=["Mail"])
@@ -219,8 +220,10 @@ async def get_messages_delta(
         return result
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to fetch messages delta: {str(e)}"
+        # Wrap unexpected errors in GraphAPIError for consistent handling
+        raise GraphAPIError(
+            message=f"Failed to fetch messages delta: {str(e)}",
+            details={"error_type": type(e).__name__},
         )
 
 
@@ -284,42 +287,36 @@ async def post_messages_delta_with_template(
     if not template_body or not template_body.strip():
         raise HTTPException(status_code=400, detail="Template body is required")
 
-    try:
-        # Parse select fields
-        select_list = [s.strip() for s in select.split(",")] if select else None
+    # Parse select fields
+    select_list = [s.strip() for s in select.split(",")] if select else None
 
-        result = await mail_service.get_messages_delta(
-            folder_id=folder_id,
-            select=select_list,
-            filter=filter,
-            top=top,
-            use_cache=_useCache,
-        )
+    # Fetch messages and render template
+    # TemplateError propagates to global handler for 400 response
+    result = await mail_service.get_messages_delta(
+        folder_id=folder_id,
+        select=select_list,
+        filter=filter,
+        top=top,
+        use_cache=_useCache,
+    )
 
-        # Apply post-fetch filter if specified
-        messages = result.get("value", [])
-        if _filter:
-            messages = apply_filter(messages, _filter)
+    # Apply post-fetch filter if specified
+    messages = result.get("value", [])
+    if _filter:
+        messages = apply_filter(messages, _filter)
 
-        rendered = template_service.render(
-            template_string=template_body,
-            messages=messages,
-            count=len(messages),
-            folder=folder_id,
-            is_initial_sync=result.get("_isInitialSync", False),
-            cached=result.get("_cached", False),
-            filtered=_filter is not None,
-            filter_expression=_filter,
-        )
+    rendered = template_service.render(
+        template_string=template_body,
+        messages=messages,
+        count=len(messages),
+        folder=folder_id,
+        is_initial_sync=result.get("_isInitialSync", False),
+        cached=result.get("_cached", False),
+        filtered=_filter is not None,
+        filter_expression=_filter,
+    )
 
-        return PlainTextResponse(content=rendered)
-
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-    except Exception as e:
-        raise HTTPException(
-            status_code=500, detail=f"Failed to render template: {str(e)}"
-        )
+    return PlainTextResponse(content=rendered)
 
 
 @router.delete(
@@ -456,4 +453,8 @@ async def create_draft(request: CreateDraftRequest):
         return draft
 
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to create draft: {str(e)}")
+        # Wrap unexpected errors in GraphAPIError for consistent handling
+        raise GraphAPIError(
+            message=f"Failed to create draft: {str(e)}",
+            details={"error_type": type(e).__name__},
+        )

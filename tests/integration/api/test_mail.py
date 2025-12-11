@@ -136,8 +136,8 @@ class TestMailDeltaGet:
 
         response = client.get("/me/mailFolders/inbox/messages/delta")
 
-        assert response.status_code == 500
-        assert "Failed to fetch messages delta" in response.json()["detail"]
+        assert response.status_code == 502
+        assert "Failed to fetch messages delta" in response.json()["message"]
 
 
 class TestMailDeltaPost:
@@ -390,8 +390,9 @@ class TestCreateDraft:
             },
         )
 
-        assert response.status_code == 500
-        assert "Failed to create draft" in response.json()["detail"]
+        # GraphAPIError returns 502 (Bad Gateway) for upstream API errors
+        assert response.status_code == 502
+        assert "Failed to create draft" in response.json()["message"]
 
 
 # =============================================================================
