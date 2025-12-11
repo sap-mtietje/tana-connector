@@ -77,13 +77,13 @@ if [ "$SKIP_UPDATE" = false ] && [ -d ".git" ]; then
     fi
 fi
 
-# Optional: Sync dependencies
+# Optional: Sync dependencies (always use --inexact to preserve existing packages)
 if [ "$SKIP_DEPS" = false ]; then
     echo "Syncing dependencies..." | tee -a "$LOG_FILE"
     if [ "$DEV_MODE" = true ]; then
         uv sync --all-extras >> "$LOG_FILE" 2>&1
     else
-        uv sync >> "$LOG_FILE" 2>&1
+        uv sync --inexact >> "$LOG_FILE" 2>&1
     fi
 fi
 
