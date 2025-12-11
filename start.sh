@@ -173,7 +173,8 @@ if [ "$SKIP_DEPS" = false ]; then
         print_step "Installing with dev dependencies..."
         uv sync --all-extras
     else
-        uv sync
+        # Use --inexact to preserve existing packages (e.g., dev dependencies)
+        uv sync --inexact
     fi
     print_success "Dependencies synced"
 else
