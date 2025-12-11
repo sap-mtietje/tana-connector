@@ -6,7 +6,7 @@ from fastapi import APIRouter, Body, HTTPException, Path, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
-from app.constants import MESSAGE_FIELDS
+from app.constants import MESSAGE_FIELDS, WELL_KNOWN_MAIL_FOLDERS
 from app.dependencies import DeltaCacheServiceDep, MailServiceDep, TemplateServiceDep
 from app.exceptions import GraphAPIError
 from app.models import EmailAddressModel, ItemBodyModel
@@ -335,9 +335,7 @@ async def clear_delta_cache(
 ):
     """Clear cached delta token for a folder."""
     # Resolve folder name to match cache key
-    from app.services.mail_service import WELL_KNOWN_FOLDERS
-
-    resolved_folder = WELL_KNOWN_FOLDERS.get(folder_id.lower(), folder_id)
+    resolved_folder = WELL_KNOWN_MAIL_FOLDERS.get(folder_id.lower(), folder_id)
     cleared = delta_cache_service.clear_token(resolved_folder)
 
     return {
@@ -360,9 +358,7 @@ async def get_delta_cache_info(
     folder_id: str = Path(..., description="Mail folder ID or well-known name"),
 ):
     """Get delta cache info for debugging."""
-    from app.services.mail_service import WELL_KNOWN_FOLDERS
-
-    resolved_folder = WELL_KNOWN_FOLDERS.get(folder_id.lower(), folder_id)
+    resolved_folder = WELL_KNOWN_MAIL_FOLDERS.get(folder_id.lower(), folder_id)
     cache_info = delta_cache_service.get_cache_info(resolved_folder)
 
     if cache_info:

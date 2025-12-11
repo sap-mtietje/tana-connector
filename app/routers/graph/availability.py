@@ -6,6 +6,7 @@ from fastapi import APIRouter, Body, HTTPException, Query
 from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
+from app.constants import DEFAULT_MEETING_DURATION
 from app.dependencies import AvailabilityServiceDep, TemplateServiceDep
 from app.exceptions import GraphAPIError
 from app.models import (
@@ -35,7 +36,7 @@ class FindMeetingTimesRequest(BaseModel):
         default=None, description="Location preferences and constraints"
     )
     meetingDuration: Optional[str] = Field(
-        default="PT1H",
+        default=DEFAULT_MEETING_DURATION,
         description="Meeting duration in ISO 8601 format",
         examples=["PT30M", "PT1H", "PT1H30M", "PT2H"],
     )
@@ -196,7 +197,7 @@ async def find_meeting_times(
             attendees=[att.model_dump() for att in request.attendees],
             time_constraint=time_constraint,
             location_constraint=location_constraint,
-            meeting_duration=request.meetingDuration or "PT1H",
+            meeting_duration=request.meetingDuration or DEFAULT_MEETING_DURATION,
             max_candidates=request.maxCandidates,
             is_organizer_optional=request.isOrganizerOptional or False,
             return_suggestion_reasons=request.returnSuggestionReasons
@@ -273,7 +274,7 @@ async def find_meeting_times_with_template(
         examples=["user1@example.com,user2@example.com"],
     ),
     meetingDuration: str = Query(
-        default="PT1H",
+        default=DEFAULT_MEETING_DURATION,
         description="Meeting duration in ISO 8601 format",
         examples=["PT30M", "PT1H"],
     ),

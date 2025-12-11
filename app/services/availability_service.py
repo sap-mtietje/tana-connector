@@ -16,6 +16,7 @@ from msgraph.generated.users.item.find_meeting_times.find_meeting_times_post_req
     FindMeetingTimesPostRequestBody,
 )
 
+from app.constants import DEFAULT_MEETING_DURATION
 from app.services.graph_service import GraphService
 from app.utils.attendee_utils import build_attendees
 from app.utils.timezone_utils import format_graph_datetime, get_system_timezone_name
@@ -36,7 +37,7 @@ class AvailabilityService:
         attendees: List[Dict[str, Any]],
         time_constraint: Optional[Dict[str, Any]] = None,
         location_constraint: Optional[Dict[str, Any]] = None,
-        meeting_duration: str = "PT1H",
+        meeting_duration: str = DEFAULT_MEETING_DURATION,
         max_candidates: Optional[int] = None,
         is_organizer_optional: bool = False,
         return_suggestion_reasons: bool = True,

@@ -1,5 +1,12 @@
 """Application-wide constants."""
 
+__all__ = [
+    "WELL_KNOWN_MAIL_FOLDERS",
+    "CALENDAR_VIEW_FIELDS",
+    "MESSAGE_FIELDS",
+    "DEFAULT_MEETING_DURATION",
+]
+
 # MS Graph well-known mail folder mappings
 WELL_KNOWN_MAIL_FOLDERS = {
     "inbox": "inbox",
