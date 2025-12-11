@@ -7,7 +7,7 @@ from azure.identity import (
     AuthenticationRecord,
 )
 
-from app.services.auth_service import AuthService, auth_service
+from app.services.auth_service import AuthService
 
 
 @pytest.mark.unit
@@ -126,10 +126,12 @@ class TestAuthService:
         mock_save_record.assert_called_once_with(mock_record)
 
     async def test_authenticate_without_credential_raises_error(self):
-        """Should raise error if credential not initialized"""
+        """Should raise AuthenticationError if credential not initialized"""
+        from app.exceptions import AuthenticationError
+
         self.service.credential = None
 
-        with pytest.raises(RuntimeError, match="Credential not initialized"):
+        with pytest.raises(AuthenticationError, match="Credential not initialized"):
             await self.service._authenticate()
 
     @patch("app.services.auth_service.AUTH_RECORD_PATH")
@@ -206,22 +208,6 @@ class TestAuthService:
 
         # Verify error was caught (no exception raised)
         mock_path.write_text.assert_called_once()
-
-
-@pytest.mark.unit
-class TestAuthServiceSingleton:
-    """Tests for the global auth_service instance"""
-
-    def test_global_instance_exists(self):
-        """Should have a global auth_service instance"""
-        assert auth_service is not None
-        assert isinstance(auth_service, AuthService)
-
-    def test_global_instance_is_singleton(self):
-        """Should use the same instance across imports"""
-        from app.services.auth_service import auth_service as imported_service
-
-        assert auth_service is imported_service
 
 
 @pytest.mark.unit

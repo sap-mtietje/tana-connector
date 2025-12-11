@@ -1,17 +1,22 @@
-"""Template rendering service using Jinja2"""
+"""Template rendering service using Jinja2."""
 
+from __future__ import annotations
+
+from datetime import datetime
 from typing import Any, Dict, List
-from jinja2 import Environment, StrictUndefined, TemplateSyntaxError, UndefinedError
-from app.services.events_service import events_service
+
+from jinja2 import Environment, TemplateSyntaxError, UndefinedError
+
+from app.exceptions import TemplateError
+from app.utils.description_utils import process_description
 
 
 class TemplateService:
-    """Handles Jinja2 template rendering for events data"""
+    """Handles Jinja2 template rendering for MS Graph data (events, messages, etc.)"""
 
     def __init__(self):
         """Initialize Jinja2 environment with custom filters"""
         self.env = Environment(
-            undefined=StrictUndefined,  # Fail on undefined variables
             trim_blocks=True,
             lstrip_blocks=True,
         )
@@ -29,7 +34,7 @@ class TemplateService:
         end_date: str,
     ) -> str:
         """
-        Render a Jinja2 template with events data
+        Render a Jinja2 template with events data (legacy method for calendar).
 
         Args:
             template_string: Jinja2 template as string
@@ -45,25 +50,72 @@ class TemplateService:
             UndefinedError: If template references undefined variables
             ValueError: If template rendering fails
         """
+        return self.render(
+            template_string=template_string,
+            events=events,
+            count=len(events),
+            start_date=start_date,
+            end_date=end_date,
+        )
+
+    def render(self, template_string: str, **context) -> str:
+        """
+        Render a Jinja2 template with arbitrary context.
+
+        This is the generic method that supports any data type.
+        Use this for mail messages, or any other MS Graph data.
+
+        Args:
+            template_string: Jinja2 template as string
+            **context: Arbitrary keyword arguments passed to template
+                       Common patterns:
+                       - messages=[], count=N for mail
+                       - events=[], count=N, start_date, end_date for calendar
+
+        Returns:
+            Rendered template as string
+
+        Raises:
+            TemplateError: If template has syntax errors or rendering fails
+
+        Example:
+            # For mail messages
+            template_service.render(
+                template_string=template,
+                messages=messages,
+                count=len(messages),
+                folder="inbox",
+            )
+        """
         try:
             template = self.env.from_string(template_string)
-
-            context = {
-                "events": events,
-                "count": len(events),
-                "start_date": start_date,
-                "end_date": end_date,
-            }
-
             rendered = template.render(**context)
             return rendered
 
         except TemplateSyntaxError as e:
-            raise ValueError(f"Template syntax error at line {e.lineno}: {e.message}")
+            raise TemplateError(
+                message=f"Template syntax error: {e.message}",
+                line_number=e.lineno,
+                details={
+                    "template_snippet": template_string[:200]
+                    if template_string
+                    else None
+                },
+            )
         except UndefinedError as e:
-            raise ValueError(f"Undefined variable in template: {str(e)}")
+            raise TemplateError(
+                message=f"Undefined variable in template: {str(e)}",
+                details={
+                    "template_snippet": template_string[:200]
+                    if template_string
+                    else None
+                },
+            )
         except Exception as e:
-            raise ValueError(f"Template rendering failed: {str(e)}")
+            raise TemplateError(
+                message=f"Template rendering failed: {str(e)}",
+                details={"error_type": type(e).__name__},
+            )
 
     @staticmethod
     def _clean_filter(text: str) -> str:
@@ -74,7 +126,7 @@ class TemplateService:
         """
         if not text:
             return ""
-        return events_service.process_description(text, mode="clean")
+        return process_description(text, mode="clean")
 
     @staticmethod
     def _truncate_filter(text: str, length: int = 100) -> str:
@@ -103,8 +155,6 @@ class TemplateService:
 
         try:
             # Handle ISO format from Graph API
-            from datetime import datetime
-
             clean_str = date_string.replace("Z", "").replace(".0000000", "")
             if "T" in clean_str:
                 dt = datetime.fromisoformat(clean_str)
@@ -112,6 +162,3 @@ class TemplateService:
             return date_string
         except Exception:
             return date_string
-
-
-template_service = TemplateService()
