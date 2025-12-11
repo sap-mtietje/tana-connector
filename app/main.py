@@ -7,7 +7,8 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.cors import CORSMiddleware
 
 from app import __version__
-from app.config import validate_config
+from app.config import DEBUG, validate_config
+from app.logging import get_logger, setup_logging
 from app.exceptions import (
     AuthenticationError,
     CacheError,
@@ -21,18 +22,21 @@ from app.routers.graph import router as graph_router
 
 validate_config()
 
+# Initialize logging
+setup_logging(debug=DEBUG)
+logger = get_logger(__name__)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Lifespan context manager for startup and shutdown events"""
     # Startup
-    print("🚀 Tana-Connector server starting...")
-    print(f"📝 Version: {__version__}")
+    logger.info("Server starting", version=__version__)
 
     yield
 
     # Shutdown
-    print("👋 Tana-Connector server shutting down...")
+    logger.info("Server shutting down")
 
 
 app = FastAPI(

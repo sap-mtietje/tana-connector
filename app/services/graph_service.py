@@ -7,7 +7,10 @@ from typing import Optional
 from msgraph import GraphServiceClient
 
 from app.config import GRAPH_SCOPES
+from app.logging import get_logger
 from app.services.auth_service import AuthService
+
+logger = get_logger(__name__)
 
 
 class GraphService:
@@ -35,6 +38,7 @@ class GraphService:
 
         # Create Graph client
         self._client = GraphServiceClient(credentials=credential, scopes=GRAPH_SCOPES)
+        logger.debug("Graph client initialized")
 
         return self._client
 

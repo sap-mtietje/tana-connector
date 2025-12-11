@@ -13,6 +13,9 @@ from azure.identity import (
 
 from app.config import AUTH_RECORD_PATH, CLIENT_ID, GRAPH_SCOPES, TENANT_ID
 from app.exceptions import AuthenticationError
+from app.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class AuthService:
@@ -62,8 +65,8 @@ class AuthService:
                 details={"hint": "Call get_credential() first"},
             )
 
-        print("🔐 First-time authentication required...")
-        print("📝 Please complete the authentication in your browser")
+        logger.info("First-time authentication required")
+        logger.info("Please complete authentication in browser")
 
         # Perform interactive authentication
         new_record = await asyncio.to_thread(
@@ -72,7 +75,7 @@ class AuthService:
 
         # Save the authentication record
         self._save_auth_record(new_record)
-        print("✅ Authentication successful and saved!")
+        logger.info("Authentication successful", username=new_record.username)
 
     def _load_auth_record(self) -> Optional[AuthenticationRecord]:
         """Load authentication record from disk"""
@@ -83,7 +86,7 @@ class AuthService:
             record_data = AUTH_RECORD_PATH.read_text(encoding="utf-8")
             return AuthenticationRecord.deserialize(record_data)
         except Exception as e:
-            print(f"⚠️  Failed to load auth record: {e}")
+            logger.warning("Failed to load auth record", error=str(e))
             return None
 
     def _save_auth_record(self, record: AuthenticationRecord) -> None:
@@ -91,4 +94,4 @@ class AuthService:
         try:
             AUTH_RECORD_PATH.write_text(record.serialize(), encoding="utf-8")
         except Exception as e:
-            print(f"⚠️  Failed to save auth record: {e}")
+            logger.warning("Failed to save auth record", error=str(e))

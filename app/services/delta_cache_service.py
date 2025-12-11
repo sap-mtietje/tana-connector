@@ -47,6 +47,9 @@ from pathlib import Path
 from typing import Optional
 
 from app.config import DELTA_CACHE_DIR
+from app.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 class DeltaCacheService:
@@ -87,9 +90,13 @@ class DeltaCacheService:
         try:
             with open(cache_path, "r") as f:
                 data = json.load(f)
+                logger.debug("Delta token loaded from cache", folder_id=folder_id)
                 return data.get("delta_link")
-        except (json.JSONDecodeError, IOError):
+        except (json.JSONDecodeError, IOError) as e:
             # Corrupted cache file, treat as no cache
+            logger.warning(
+                "Failed to load delta cache", folder_id=folder_id, error=str(e)
+            )
             return None
 
     def save_token(self, folder_id: str, delta_link: str) -> None:
@@ -110,6 +117,7 @@ class DeltaCacheService:
 
         with open(cache_path, "w") as f:
             json.dump(data, f, indent=2)
+        logger.debug("Delta token saved to cache", folder_id=folder_id)
 
     def clear_token(self, folder_id: str) -> bool:
         """
@@ -125,6 +133,7 @@ class DeltaCacheService:
 
         if cache_path.exists():
             cache_path.unlink()
+            logger.info("Delta cache cleared", folder_id=folder_id)
             return True
         return False
 
@@ -139,6 +148,7 @@ class DeltaCacheService:
         for cache_file in self.cache_dir.glob("*.json"):
             cache_file.unlink()
             count += 1
+        logger.info("All delta caches cleared", count=count)
         return count
 
     def get_cache_info(self, folder_id: str) -> Optional[dict]:
