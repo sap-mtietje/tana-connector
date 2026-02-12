@@ -13,6 +13,16 @@ TENANT_ID = os.getenv("TENANT_ID")
 
 GRAPH_SCOPES = ["Calendars.Read", "Mail.Read", "Mail.ReadWrite"]
 
+# MCP Server scopes (extended for full Outlook integration)
+MCP_GRAPH_SCOPES = [
+    "Calendars.Read",
+    "Calendars.ReadWrite",
+    "Mail.Read",
+    "Mail.ReadWrite",
+    "People.Read",
+    "User.Read",
+]
+
 
 HOST = os.getenv("HOST", "0.0.0.0")
 PORT = int(os.getenv("PORT", "8000"))
