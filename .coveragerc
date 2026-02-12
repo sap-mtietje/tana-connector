@@ -5,6 +5,7 @@ omit =
     */test_*
     */__pycache__/*
     */site-packages/*
+    */mcp/*
 
 [report]
 exclude_lines =
