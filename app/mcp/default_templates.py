@@ -101,7 +101,6 @@ Found {{ count }} suggestion(s).
 GET_EMAILS = """\
 Found {{ count }} message(s) in {{ folder }}.
 {% for msg in messages %}
-{% if '@removed' not in msg %}
 
 ---
 ## {{ loop.index }}. {{ msg.subject or "(No subject)" }}{% if not msg.isRead %} [UNREAD]{% endif %}
@@ -127,7 +126,6 @@ Found {{ count }} message(s) in {{ folder }}.
 {% elif msg.bodyPreview %}- **Preview**: {{ msg.bodyPreview }}
 {% endif %}\
 {% if msg.webLink %}- **Link**: {{ msg.webLink }}
-{% endif %}\
 {% endif %}\
 {% endfor %}"""
 

@@ -277,6 +277,9 @@ async def outlook_get_emails(arguments: Dict[str, Any]) -> str:
 
         messages = result.get("value", [])
 
+        # Filter out @removed markers (delta sync tombstones)
+        messages = [msg for msg in messages if "@removed" not in msg]
+
         # Apply post-fetch filter if specified
         if input_data.post_filter:
             messages = apply_filter(messages, input_data.post_filter)
