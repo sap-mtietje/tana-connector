@@ -10,6 +10,7 @@ from app.services.calendar_service import CalendarService
 from app.services.delta_cache_service import DeltaCacheService
 from app.services.graph_service import GraphService
 from app.services.mail_service import MailService
+from app.services.template_service import TemplateService
 
 
 class ServiceFactory:
@@ -26,6 +27,7 @@ class ServiceFactory:
         self._calendar_service: Optional[CalendarService] = None
         self._mail_service: Optional[MailService] = None
         self._availability_service: Optional[AvailabilityService] = None
+        self._template_service: Optional[TemplateService] = None
 
     def get_auth_service(self) -> AuthService:
         """Get or create AuthService singleton."""
@@ -65,6 +67,12 @@ class ServiceFactory:
         if self._availability_service is None:
             self._availability_service = AvailabilityService(self.get_graph_service())
         return self._availability_service
+
+    def get_template_service(self) -> TemplateService:
+        """Get or create TemplateService singleton."""
+        if self._template_service is None:
+            self._template_service = TemplateService()
+        return self._template_service
 
 
 # Global service factory instance
